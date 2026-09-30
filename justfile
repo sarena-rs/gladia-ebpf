@@ -1,12 +1,5 @@
 export PATH := justfile_directory() / "scapyenv/bin" + ":" + env_var("PATH")
 
-manifests_dir := "./manifests"
-crd_dir := manifests_dir + "/base/crd"
-webhook_dir := manifests_dir + "/base/webhook"
-
-cluster_name := "sarena"
-image_tag := "sarena:dev"
-
 default:
   @just --list
 
@@ -14,8 +7,7 @@ setup:
     python3 -m venv scapyenv
     scapyenv/bin/pip install -r scapy/requirements.txt
 
-# Build all workspace packages; the eBPF programs are built first because
-# `sarena-ebpf-objects` embeds them
+# Build all workspace packages; the eBPF programs are built first
 build: build-ebpf
     cargo build
 
@@ -49,83 +41,6 @@ test: build-ebpf
 build-ebpf:
     cargo xtask build-ebpf
 
-gen-crd:
-    cargo run --bin sarena-crdgen -- > {{crd_dir}}/sarena-crd.yaml
-
-gen-cert:
-    cargo run --bin sarena-certgen -- > {{webhook_dir}}/sarena-webhook.yaml
-
-apply-manifests overlay: gen-crd gen-cert
-    kubectl apply -k {{crd_dir}}
-    kubectl wait --for=condition=Established --timeout=60s -f {{crd_dir}}/sarena-crd.yaml
-    kubectl apply -k {{manifests_dir}}/overlays/{{overlay}}
-
-netns-clean:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    for _ in $(seq 1 20); do
-        mounts=$(awk '{print $5}' /proc/self/mountinfo | grep -E '^/run/netns(/|$)' || true)
-        if [ -z "$mounts" ]; then
-            exit 0
-        fi
-        while IFS= read -r m; do
-            sudo umount "$m" 2>/dev/null || true
-        done < <(echo "$mounts" | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2-)
-    done
-
-    echo "warning: could not fully clean up mounts under /run/netns:" >&2
-    awk '{print $5}' /proc/self/mountinfo | grep -E '^/run/netns(/|$)' >&2 || true
-    exit 1
-
-kind-up:
-    bash "{{justfile_directory()}}/scripts/kind-up.sh"
-
-kind-down:
-    bash "{{justfile_directory()}}/scripts/kind-down.sh"
-
-# Development install: the `dev` overlay (shared base, no DaemonSet) and the CNI
-# installed onto the nodes directly; run the daemon with `kind-run-daemon`
-kind-install: build (apply-manifests "dev")
-    bash "{{justfile_directory()}}/scripts/kind-install.sh"
-
-kind-run-daemon: build
-    bash "{{justfile_directory()}}/scripts/kind-run-daemon.sh"
-
-# Realistic install path: build the image, load it into kind, and apply the
-# `prod` overlay (shared base plus the DaemonSet)
-kind-deploy: _kind-load-image (apply-manifests "prod")
-    kubectl -n sarena-system rollout restart daemonset/sarena-daemon
-    kubectl -n sarena-system rollout status daemonset/sarena-daemon
-
-kind-sc *ARGS: build
-    bash "{{justfile_directory()}}/scripts/kind-sc.sh" {{ARGS}}
-
-kind-cni-logs:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    node_name="sarena-control-plane"
-    log_file="/var/log/sarena-cni.log.$(date +%F)"
-    docker exec "${node_name}" sh -c "touch '${log_file}' && tail -f '${log_file}'"
-
-# Run the sarena-daemon (requires sudo: it manages netns/BPF attachments)
-run-daemon: build-ebpf
-    #!/usr/bin/env bash
-    set -euo pipefail
-    exe=$(cargo build -p sarena-daemon --message-format=json \
-        | jq -r 'select(.reason == "compiler-artifact" and .executable != null) | .executable')
-    sudo "$exe"
-
-# Run the sarena-cli, forwarding all arguments to it (e.g. `just sarena-cli service list`)
-sarena-cli *ARGS: build-ebpf
-    cargo run --bin sarena-cli -- {{ARGS}}
-
-# Run all integration tests in the sarena-infra package (requires root)
-infra-test: (_root-test "sarena-infra")
-
-# Run all integration tests in the sarena-data-plane package (requires root)
-data-plane-test: (_root-test "sarena-data-plane")
-
 ebpf-test: build-ebpf 
     #!/usr/bin/env bash
     set -euo pipefail
@@ -133,14 +48,11 @@ ebpf-test: build-ebpf
         | jq -r 'select(.profile.test == true) | .executable')
     sudo "$exe" --ignored --no-capture
 
-# Run the sarena-cni-plugin integration test (requires root)
-cni-test: (_root-test "sarena-cni-plugin")
-
 # Full workflow: build, test, and run all root-only test suites incl. the eBPF tests
-all: build test infra-test data-plane-test cni-test ebpf-test
+all: build test ebpf-test
 
 # Run all `#[ignore]`d integration tests (requiring root/CAP_NET_ADMIN) for `package`
-_root-test package: build-ebpf netns-clean
+_root-test package: build-ebpf
     #!/usr/bin/env bash
     set -euo pipefail
     exes=$(cargo test -p {{package}} --features test-util --tests --no-run --message-format=json \
@@ -149,7 +61,3 @@ _root-test package: build-ebpf netns-clean
         just netns-clean
         sudo "$exe" --ignored --no-capture
     done
-
-_kind-load-image:
-    bash "{{justfile_directory()}}/scripts/image-build.sh" "{{image_tag}}"
-    kind load docker-image {{image_tag}} --name {{cluster_name}}

@@ -1,6 +1,0 @@
-resources:
-  - namespace.yaml
-  - rbac
-  - crd
-  - webhook
-  - address-pool

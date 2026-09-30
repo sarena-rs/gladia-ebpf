@@ -1,6 +1,4 @@
 pub mod logging;
-pub mod metrics;
-pub mod version;
 
 use serde::{Deserialize, Serialize};
 
@@ -34,4 +32,4 @@ pub struct TracingConfig {
     pub otel_endpoint: Option<String>,
 }
 
-pub use logging::{init_tracing, shutdown_tracing};
+pub use logging::init_tracing;

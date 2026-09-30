@@ -1,6 +1,0 @@
-apiVersion: sarena.erwinkok.org/v1alpha1
-kind: AddressPool
-metadata:
-  name: default
-spec:
-  cidr: 10.244.0.0/16
