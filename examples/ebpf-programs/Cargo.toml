@@ -1,0 +1,26 @@
+[package]
+name = "ebpf-programs"
+
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+aya-ebpf = { workspace = true, default-features = false }
+aya-log-ebpf = { workspace = true }
+bitflags = { workspace = true, default-features = false }
+network-types = { workspace = true, default-features = false }
+num-traits = { workspace = true, default-features = false }
+thiserror = { workspace = true, default-features = false }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]]
+name = "ebpf-programs"
+path = "src/main.rs"

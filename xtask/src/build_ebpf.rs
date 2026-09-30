@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    fmt::Write as _,
     fs,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
@@ -10,60 +10,46 @@ use anyhow::{Context as _, Result, bail};
 use cargo_metadata::MetadataCommand;
 use clap::Parser;
 use serde_json::Value;
-
-/// Default eBPF packages to build. Can be overridden via --package.
-const DEFAULT_EBPF_PACKAGES: &[&str] = &["sarena-ebpf-programs", "sarena-ebpf-test-programs"];
+use sha2::{Digest as _, Sha256};
 
 /// Default target triple for eBPF programs.
 const DEFAULT_TARGET: &str = "bpfel-unknown-none";
 
+/// Build one eBPF package and generate a Rust file that embeds the resulting
+/// object as an `EbpfObject` static.
 #[derive(Debug, Parser)]
 pub struct BuildEbpfOptions {
+    /// The eBPF package to build.
+    #[clap(long = "package", short = 'p', value_name = "PKG")]
+    pub package: String,
+
+    /// Path of the generated Rust file. The ELF object is written next to it
+    /// with the same file stem and an `.o` extension.
+    #[clap(long = "output", short = 'o', value_name = "FILE")]
+    pub output: PathBuf,
+
+    /// Name of the generated static. Defaults to the package name in
+    /// SCREAMING_SNAKE_CASE (`ebpf-programs` → `EBPF_PROGRAMS`).
+    #[clap(long = "const", value_name = "NAME")]
+    pub constant: Option<String>,
+
     /// Target triple for the eBPF programs.
     #[clap(long, default_value = DEFAULT_TARGET)]
     pub target: String,
-
-    /// Override which packages to build. Can be repeated: -p foo -p bar.
-    /// Defaults to the built-in EBPF_PACKAGES list.
-    #[clap(long = "package", short = 'p', value_name = "PKG")]
-    pub packages: Vec<String>,
 
     /// Rust toolchain to use (e.g. "nightly", "nightly-2024-01-01").
     /// Must be nightly because of -Z build-std. Defaults to the toolchain
     /// pinned in rust-toolchain.toml, the same one the userspace build uses.
     #[clap(long)]
     pub toolchain: Option<String>,
-
-    /// Output directory for the compiled eBPF objects.
-    #[clap(long, default_value = "./target-ebpf")]
-    pub out_dir: PathBuf,
-}
-
-impl Default for BuildEbpfOptions {
-    fn default() -> Self {
-        Self {
-            target: DEFAULT_TARGET.to_string(),
-            packages: vec![],
-            toolchain: None,
-            out_dir: PathBuf::from("./target-ebpf"),
-        }
-    }
 }
 
 pub(crate) fn run(opts: BuildEbpfOptions) -> Result<()> {
-    // Resolve which packages to build.
-    let packages_to_build: Vec<String> = if opts.packages.is_empty() {
-        DEFAULT_EBPF_PACKAGES
-            .iter()
-            .map(|s| s.to_string())
-            .collect()
-    } else {
-        opts.packages.clone()
-    };
+    let pkg = opts.package.as_str();
 
     // `cargo metadata` gives us the workspace root (so paths are always
     // correct regardless of where xtask is invoked from) and lets us validate
-    // the requested package names up front.
+    // the requested package name up front.
     let metadata = MetadataCommand::new()
         .no_deps()
         .exec()
@@ -71,61 +57,47 @@ pub(crate) fn run(opts: BuildEbpfOptions) -> Result<()> {
 
     let workspace_root = metadata.workspace_root.as_std_path().to_path_buf();
 
-    let workspace_package_names: HashSet<String> = metadata
-        .packages
-        .iter()
-        .map(|p| p.name.to_string())
-        .collect();
-
-    for pkg in &packages_to_build {
-        if !workspace_package_names.contains(pkg.as_str()) {
-            eprintln!(
-                "warning: package `{pkg}` was not found in the workspace — \
-                 it may fail to build"
-            );
-        }
+    if !metadata.packages.iter().any(|p| p.name.as_str() == pkg) {
+        bail!("package `{pkg}` was not found in the workspace");
     }
 
-    let mut built_artifacts: Vec<(String, PathBuf)> = Vec::new();
+    println!("==> Building eBPF package `{pkg}`");
 
-    for pkg in &packages_to_build {
-        println!("==> Building eBPF package `{pkg}`");
+    let artifacts = build_package(
+        pkg,
+        &opts.target,
+        opts.toolchain.as_deref(),
+        &workspace_root,
+    )
+    .with_context(|| format!("failed to build package `{pkg}`"))?;
 
-        let artifacts = build_package(
-            pkg,
-            &opts.target,
-            opts.toolchain.as_deref(),
-            &workspace_root,
-        )
-        .with_context(|| format!("failed to build package `{pkg}`"))?;
+    let artifact = match artifacts.as_slice() {
+        [artifact] => artifact,
+        [] => bail!(
+            "package `{pkg}` built successfully but produced no artifacts.\n\
+             \n\
+             Possible causes:\n\
+             • The package has no [[bin]] target (add one in its Cargo.toml)\n\
+             • The binary name differs from the package name\n\
+             • The build was cached — try `cargo clean -p {pkg}` and retry"
+        ),
+        _ => bail!(
+            "package `{pkg}` produced {} artifacts, expected exactly one [[bin]] target",
+            artifacts.len()
+        ),
+    };
 
-        if artifacts.is_empty() {
-            bail!(
-                "package `{pkg}` built successfully but produced no artifacts.\n\
-                 \n\
-                 Possible causes:\n\
-                 • The package has no [[bin]] target (add one in its Cargo.toml)\n\
-                 • The binary name differs from the package name\n\
-                 • The build was cached — try `cargo clean -p {pkg}` and retry"
-            );
-        }
+    let constant = opts
+        .constant
+        .clone()
+        .unwrap_or_else(|| pkg.replace('-', "_").to_uppercase());
 
-        println!("  produced {} artifact(s) for `{pkg}`", artifacts.len());
-        for a in &artifacts {
-            println!("    {}", a.display());
-        }
-
-        for a in artifacts {
-            built_artifacts.push((pkg.clone(), a));
-        }
-    }
-
-    copy_artifacts(&built_artifacts, &opts.out_dir).context("failed to copy eBPF artifacts")?;
+    embed_artifact(pkg, &constant, artifact, &opts.output)
+        .context("failed to embed eBPF artifact")?;
 
     println!(
-        "\nDone. {} object(s) written to `{}`.",
-        built_artifacts.len(),
-        opts.out_dir.display()
+        "\nDone. `{pkg}` embedded as `{constant}` in `{}`.",
+        opts.output.display()
     );
     Ok(())
 }
@@ -193,9 +165,9 @@ fn build_package(
             Some("compiler-artifact") => {
                 // Guard: only collect artifacts that belong to the package we
                 // asked to build.  The `target.name` field holds the crate
-                // name (e.g. "sarena-ebpf-programs"), which is stable and
-                // unambiguous.  We also check `package_id` as a fallback for
-                // workspaces where the target name was customised.
+                // name, which is stable and unambiguous.  We also check
+                // `package_id` as a fallback for workspaces where the target name
+                // was customised.
                 let target_name = v["target"]["name"].as_str().unwrap_or("");
                 let package_id = v["package_id"].as_str().unwrap_or("");
                 let is_our_pkg = target_name == pkg
@@ -232,43 +204,55 @@ fn build_package(
 }
 
 // ---------------------------------------------------------------------------
-// Copy
+// Embed
 // ---------------------------------------------------------------------------
 
-/// Copy every artifact into `out_dir` as `<pkg>.o` (or `<pkg>_<n>.o` for
-/// packages that produce multiple binaries).
-fn copy_artifacts(artifacts: &[(String, PathBuf)], out_dir: &Path) -> Result<()> {
-    fs::create_dir_all(out_dir)
-        .with_context(|| format!("failed to create `{}`", out_dir.display()))?;
+/// Copy `artifact` next to `output` (same stem, `.o` extension) and write
+/// `output` as a Rust file declaring a `pub static <constant>: EbpfObject`
+/// that embeds it.
+///
+/// The generated file refers to `EbpfObject` unqualified, so it must be
+/// `include!`d where that type is in scope. The object is referenced by a
+/// path relative to the generated file, so the pair can live anywhere.
+/// rustc tracks both files in its dep-info, so the including crate is rebuilt
+/// whenever they change.
+fn embed_artifact(pkg: &str, constant: &str, artifact: &Path, output: &Path) -> Result<()> {
+    let object = output.with_extension("o");
+    let object_name = object
+        .file_name()
+        .and_then(|n| n.to_str())
+        .with_context(|| format!("invalid output path `{}`", output.display()))?;
 
-    let mut seen: HashMap<&str, usize> = HashMap::new();
-
-    for (pkg, src) in artifacts {
-        if !src.exists() {
-            bail!(
-                "artifact `{}` reported by cargo does not exist on disk",
-                src.display()
-            );
-        }
-
-        let idx = {
-            let e = seen.entry(pkg.as_str()).or_insert(0);
-            *e += 1;
-            *e
-        };
-
-        let dst_name = if idx == 1 {
-            format!("{pkg}.o")
-        } else {
-            format!("{pkg}_{idx}.o")
-        };
-        let dst = out_dir.join(&dst_name);
-
-        fs::copy(src, &dst)
-            .with_context(|| format!("failed to copy `{}` → `{}`", src.display(), dst.display()))?;
-
-        println!("  copied  `{}` → `{}`", src.display(), dst.display());
+    if let Some(dir) = output.parent().filter(|d| !d.as_os_str().is_empty()) {
+        fs::create_dir_all(dir).with_context(|| format!("failed to create `{}`", dir.display()))?;
     }
+
+    let bytes =
+        fs::read(artifact).with_context(|| format!("failed to read `{}`", artifact.display()))?;
+    let sha256 = hex::encode(Sha256::digest(&bytes));
+
+    fs::write(&object, &bytes)
+        .with_context(|| format!("failed to write `{}`", object.display()))?;
+    println!(
+        "  copied  `{}` → `{}`",
+        artifact.display(),
+        object.display()
+    );
+
+    let mut generated = String::new();
+    write!(
+        generated,
+        "// @generated by `cargo xtask build-ebpf -p {pkg}`. Do not edit.\n\
+         pub static {constant}: crate::EbpfObject = crate::EbpfObject {{\n    \
+         name: {pkg:?},\n    \
+         bytes: aya::include_bytes_aligned!({object_name:?}),\n    \
+         sha256: {sha256:?},\n\
+         }};\n"
+    )?;
+
+    fs::write(output, generated)
+        .with_context(|| format!("failed to write `{}`", output.display()))?;
+    println!("  wrote   `{}`", output.display());
 
     Ok(())
 }

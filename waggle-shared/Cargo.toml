@@ -1,0 +1,21 @@
+[package]
+name = "waggle-shared"
+publish = false
+
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = ["std"]
+std = ["dep:aya", "dep:serde"]
+
+[dependencies]
+aya = { workspace = true, optional = true }
+hex = { workspace = true }
+serde = { workspace = true, optional = true }

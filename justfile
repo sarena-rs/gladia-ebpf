@@ -1,11 +1,5 @@
-export PATH := justfile_directory() / "scapyenv/bin" + ":" + env_var("PATH")
-
 default:
   @just --list
-
-setup:
-    python3 -m venv scapyenv
-    scapyenv/bin/pip install -r scapy/requirements.txt
 
 # Build all workspace packages; the eBPF programs are built first
 build: build-ebpf
@@ -18,7 +12,6 @@ check: build-ebpf
 # clean up target
 clean:
     cargo clean    
-    rm -rf target-ebpf    
 
 # fmt up target
 fmt:
@@ -31,20 +24,20 @@ clippy: build-ebpf
 # Run all tests except the eBPF test runner (requires root)
 test: build-ebpf
     cargo test --workspace \
-        --features test-util \
-        --exclude sarena-test-runner \
-        --exclude sarena-ebpf-programs \
-        --exclude sarena-ebpf-test-programs \
+        --exclude waggle \
+        --exclude ebpf-programs \
+        --exclude ebpf-test-programs \
         -- --no-capture
 
-# Build eBPF programs (outputs to ./target-ebpf/)
+# Build eBPF programs
 build-ebpf:
-    cargo xtask build-ebpf
+    cargo run --release --package xtask -- build-ebpf -p ebpf-programs --const PROGRAMS -o target/ebpf-objects/ebpf-programs.rs
+    cargo run --release --package xtask -- build-ebpf -p ebpf-test-programs --const TEST_PROGRAMS -o target/ebpf-objects/ebpf-test-programs.rs
 
 ebpf-test: build-ebpf 
     #!/usr/bin/env bash
     set -euo pipefail
-    exe=$(cargo test --no-run -p sarena-test-runner --message-format=json \
+    exe=$(cargo test --no-run -p waggle --message-format=json \
         | jq -r 'select(.profile.test == true) | .executable')
     sudo "$exe" --ignored --no-capture
 
@@ -55,7 +48,7 @@ all: build test ebpf-test
 _root-test package: build-ebpf
     #!/usr/bin/env bash
     set -euo pipefail
-    exes=$(cargo test -p {{package}} --features test-util --tests --no-run --message-format=json \
+    exes=$(cargo test -p {{package}} --tests --no-run --message-format=json \
         | jq -r 'select(.profile.test == true) | .executable | select(. != null)')
     for exe in $exes; do
         just netns-clean

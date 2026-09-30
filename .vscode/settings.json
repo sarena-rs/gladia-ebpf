@@ -24,11 +24,9 @@
     // Keep the editor from indexing build output.
     "files.watcherExclude": {
         "**/target/**": true,
-        "**/target-ebpf/**": true
     },
     "search.exclude": {
         "**/target": true,
-        "**/target-ebpf": true,
         "**/Cargo.lock": true
     }
 }

@@ -12,7 +12,9 @@ version.workspace = true
 anyhow = { workspace = true, features = ["std"] }
 cargo_metadata = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+hex = { workspace = true, features = ["alloc"] }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 
 [[bin]]
 name = "xtask"

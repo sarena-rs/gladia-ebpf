@@ -1,0 +1,23 @@
+[package]
+name = "waggle-ebpf"
+
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+waggle-shared = { path = "../waggle-shared", default-features = false }
+waggle-macros = { path = "../waggle-macros" }
+
+aya-ebpf = { workspace = true }
+network-types = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true, default-features = false }
+
+[build-dependencies]
+which = { workspace = true }

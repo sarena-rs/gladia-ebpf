@@ -12,10 +12,6 @@ pub struct XtaskOptions {
 
 #[derive(Debug, Parser)]
 enum Subcommand {
-    /// Compile eBPF programs and place them in ./target-ebpf.
-    ///
-    /// From there, `sarena-ebpf-objects` embeds them into the userspace
-    /// binaries.
     BuildEbpf(build_ebpf::BuildEbpfOptions),
 }
 

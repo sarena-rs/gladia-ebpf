@@ -6,7 +6,7 @@
 
 ## License
 
-Unless otherwise noted, Sarena is dual licensed under either the MIT License or 
+Unless otherwise noted, this project is dual licensed under either the MIT License or 
 the Apache License, Version 2.0, at your option.
 
 Some files derived from third-party projects remain under their original license 
@@ -19,7 +19,7 @@ or conditions.
 
 ## Acknowledgments
 
-Sarena is an independent educational project and is not affiliated with or 
+Theis project is an independent educational project and is not affiliated with or 
 endorsed by the Cilium or Aya projects. Small portions of the repository are 
 derived from upstream projects and retain their original copyright notices and 
 license headers.

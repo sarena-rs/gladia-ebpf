@@ -1,41 +1,28 @@
 [workspace]
 members = [
-    "sarena-ebpf-objects",    
-    "sarena-infra",
-    "sarena-utils",
-
-    # Test infrastructure
-    "sarena-test-macros",
-    "sarena-test-runner",
+    "waggle",
+    "waggle-macros",
 
     # Shared (userspace & eBPF)
-    "sarena-shared-test",
-    "sarena-test-scapy",    
+    "waggle-shared",
 
     # eBPF framework 
-    "sarena-ebpf-common",
-    "sarena-ebpf-test-framework",
+    "waggle-ebpf",
 
     # eBPF programs
-    "sarena-ebpf-programs",
-    "sarena-ebpf-test-programs",
+    "examples/ebpf-programs",
+    "examples/ebpf-test-programs",
 
     # Build tooling
     "xtask",
 ]
 
 default-members = [
-    "sarena-ebpf-objects",
-    "sarena-infra",
-    "sarena-utils",
-
-    # Test infrastructure
-    "sarena-test-macros",
-    "sarena-test-runner",
+    "waggle",
+    "waggle-macros",
 
     # Shared (userspace & eBPF)
-    "sarena-shared-test",
-    "sarena-test-scapy",
+    "waggle-shared",
 
     # Integration tests is not included here because it needs privileges to run.
     # eBPF crates are not included because these are build separately by xtask
@@ -48,7 +35,7 @@ resolver = "2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/erwin-kok/sarena"
+repository = "https://github.com/erwin-kok/"
 keywords = ["Rust", "eBPF", "TCX", "XDP", "test framework"]
 version = "0.1.0"
 
@@ -71,9 +58,6 @@ futures = { version = "0.3", default-features = false }
 hex = { version = "0.4", default-features = false }
 ipnet = { version ="2", default-features = false }
 jsonpath_lib = "0.3"
-kube = { version = "4", features = ["runtime", "derive", "client"] }
-k8s-openapi = { version = "0.28", features = ["schemars", "latest"] }
-libc = "0.2"
 log = { version = "0.4", default-features = false }
 network-types = { version = "0.2", default-features = false }
 nix = { version = "0.31", features = ["poll"] }
@@ -82,27 +66,16 @@ num-traits = { version = "0.2", default-features = false }
 proc-macro2 = { version = "1", default-features = false }
 quote = { version = "1", default-features = false }
 rand = { version = "0.10", default-features = false }
-rcgen = "0.14"
 regex = { version = "1.12" }
-rscni-plugin = { version = "0.5", features = ["test-util"] }
-rustls = { version = "0.23", default-features = false, features = ["ring"] }
 schemars = "1"
 serde = { version = "1", default-features = false, features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
 sha2 = "0.11"
 syn = { version = "3", default-features = false }
-tabwriter = "1"
 thiserror = { version = "2" }
 tokio = { version = "1.40" }
 tokio-util = { version = "0.7", features = ["rt"] }
-tower = { version = "0.5", features = ["util"] }
-tower-http = { version = "0.7", features = ["trace"] }
-tracing = { version = "0.1" }
-tracing-appender = "0.2"
-tracing-log = "0.2"
-tracing-subscriber = { version = "0.3", default-features = false }
-url = { version = "2" }
 uuid = { version = "1", features = ["v4"] }
 which = { version = "8" }
 wiremock = "0.6"

@@ -1,8 +1,8 @@
-# Sarena
+# eBPF Test Framework
 
 This project is an independent educational project.
 
-Sarena's architecture and design are heavily inspired by Cilium, while its Rust implementation 
+The architecture and design are heavily inspired by Cilium, while its Rust implementation 
 is an independent implementation except where individual files explicitly state they are derived 
 from upstream sources.
 
