@@ -77,3 +77,13 @@ macro_rules! assert_test {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! tail_call {
+    ("hello") => {
+        1u32
+    };
+    ("world") => {
+        2u32
+    };
+}

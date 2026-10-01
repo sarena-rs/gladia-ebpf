@@ -6,7 +6,7 @@ pub mod suite;
 pub mod util;
 
 pub use suite::TestSuite;
-pub use waggle_macros::{act, arrange, assert};
+pub use waggle_macros::{act, arrange, assert, include_generated};
 pub use waggle_shared::*;
 
 /// Not public API. Paths used by code generated from `waggle-macros`, so

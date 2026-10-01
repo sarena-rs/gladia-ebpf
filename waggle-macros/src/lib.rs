@@ -2,34 +2,26 @@ mod act;
 mod arrange;
 mod assert;
 mod common;
+mod generate;
 
 use proc_macro::TokenStream;
 
-use crate::{act::ActProgram, arrange::ArrangeProgram, assert::AssertProgram};
-
 #[proc_macro_attribute]
 pub fn arrange(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    match ArrangeProgram::parse(attrs.into(), item.into()) {
-        Ok(prog) => prog.expand(),
-        Err(err) => err.to_compile_error(),
-    }
-    .into()
+    arrange::expand(attrs.into(), item.into()).into()
 }
 
 #[proc_macro_attribute]
 pub fn act(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    match ActProgram::parse(attrs.into(), item.into()) {
-        Ok(prog) => prog.expand(),
-        Err(err) => err.to_compile_error(),
-    }
-    .into()
+    act::expand(attrs.into(), item.into()).into()
 }
 
 #[proc_macro_attribute]
 pub fn assert(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    match AssertProgram::parse(attrs.into(), item.into()) {
-        Ok(prog) => prog.expand(),
-        Err(err) => err.to_compile_error(),
-    }
-    .into()
+    assert::expand(attrs.into(), item.into()).into()
+}
+
+#[proc_macro]
+pub fn include_generated(item: TokenStream) -> TokenStream {
+    generate::expand(item.into()).into()
 }

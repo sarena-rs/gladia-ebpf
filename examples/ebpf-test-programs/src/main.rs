@@ -4,7 +4,7 @@
 
 #[cfg(not(test))]
 use ebpf_test_programs::do_panic;
-use waggle_ebpf::{TestEntryCall, TestEntryHeader};
+use waggle_ebpf::{TestEntryCall, TestEntryHeader, tail_call};
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -16,11 +16,11 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 #[unsafe(no_mangle)]
 static LICENSE: [u8; 13] = *b"Dual MIT/GPL\0";
 
-// waggle::include_generated!();
+waggle_ebpf::include_generated!();
 
-// fn test() {
-//     waggle::tail_call!("hello");
-// }
+fn test() {
+    tail_call!("hello");
+}
 
 #[used]
 #[unsafe(link_section = ".test_entry_calls")]

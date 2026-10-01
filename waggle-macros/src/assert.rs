@@ -4,6 +4,14 @@ use syn::ItemFn;
 
 use crate::common::{ProgramAttrs, ProgramMode, outer_fn_ident, passthrough_xdp};
 
+pub(crate) fn expand(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    match AssertProgram::parse(attrs.into(), item.into()) {
+        Ok(prog) => prog.expand(),
+        Err(err) => err.to_compile_error(),
+    }
+    .into()
+}
+
 pub(crate) struct AssertProgram {
     item: ItemFn,
     mode: ProgramMode,
@@ -27,11 +35,7 @@ impl AssertProgram {
     fn expand_tc(&self) -> TokenStream {
         let Self { item, name, .. } = self;
         let ItemFn {
-            attrs,
-            vis,
-            sig,
-            block,
-            ..
+            attrs, sig, block, ..
         } = item;
         let outer_fn = outer_fn_ident("assert", name);
         let fn_name = &sig.ident;
@@ -39,7 +43,7 @@ impl AssertProgram {
         quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
-            #vis fn #outer_fn(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
+            pub fn #outer_fn(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
                 let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
                 let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
                 let mut test_suite = match ::waggle_ebpf::suite::TestSuite::new(#name, ::core::file!()) {
@@ -53,14 +57,14 @@ impl AssertProgram {
                     return ::waggle_ebpf::wire::TestStatus::FrameworkError as i32;
                 }
 
-                return test_suite.status() as i32;
+                test_suite.status() as i32
+            }
 
-                #(#attrs)*
-                #vis #sig {
-                    loop {
-                        #(#stmts)*
-                        break;
-                    }
+            #(#attrs)*
+            #sig {
+                loop {
+                    #(#stmts)*
+                    break;
                 }
             }
         }
@@ -88,7 +92,7 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
-            fn __test_fw_assert_my_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
+            pub fn __test_fw_assert_my_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
                 let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
                 let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
                 let mut test_suite = match ::waggle_ebpf::suite::TestSuite::new("my_test", ::core::file!()) {
@@ -102,13 +106,13 @@ mod tests {
                     return ::waggle_ebpf::wire::TestStatus::FrameworkError as i32;
                 }
 
-                return test_suite.status() as i32;
+                test_suite.status() as i32
+            }
 
-                fn prog(ctx: ::aya_ebpf::programs::TcContext, t: &mut TestSuite) {
-                    loop {
-                        assert_test!(t, 1 + 1 == 2);
-                        break;
-                    }
+            fn prog(ctx: ::aya_ebpf::programs::TcContext, t: &mut TestSuite) {
+                loop {
+                    assert_test!(t, 1 + 1 == 2);
+                    break;
                 }
             }
         };
@@ -131,12 +135,12 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "xdp")]
-            fn __test_fw_assert_firewall_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
-                return check(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
+            pub fn __test_fw_assert_firewall_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
+                check(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32
+            }
 
-                fn check(ctx: ::aya_ebpf::programs::XdpContext) -> ::waggle_ebpf::wire::TestStatus {
-                    ::waggle_ebpf::wire::TestStatus::Pass
-                }
+            fn check(ctx: ::aya_ebpf::programs::XdpContext) -> ::waggle_ebpf::wire::TestStatus {
+                ::waggle_ebpf::wire::TestStatus::Pass
             }
         };
         assert_eq!(expected.to_string(), expanded.to_string());

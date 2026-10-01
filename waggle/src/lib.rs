@@ -88,9 +88,3 @@ macro_rules! tail_call {
         2u32
     };
 }
-
-// include_generated!();
-// expands to:
-// include!(concat!(env!("OUT_DIR"), "/my_framework.rs"));
-
-//

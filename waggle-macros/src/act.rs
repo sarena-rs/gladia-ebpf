@@ -9,6 +9,14 @@ pub(crate) struct ActProgram {
     name: String,
 }
 
+pub(crate) fn expand(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    match ActProgram::parse(attrs.into(), item.into()) {
+        Ok(prog) => prog.expand(),
+        Err(err) => err.to_compile_error(),
+    }
+    .into()
+}
+
 impl ActProgram {
     pub(crate) fn parse(attrs: TokenStream, item: TokenStream) -> syn::Result<Self> {
         let item: ItemFn = syn::parse2(item)?;
@@ -46,14 +54,14 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
-            fn __test_fw_act_my_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
+            pub fn __test_fw_act_my_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
                 let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
                 let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
-                return prog(tc_ctx) as i32;
+                prog(tc_ctx) as i32
+            }
 
-                fn prog(ctx: ::aya_ebpf::programs::TcContext) -> TestStatus {
-                    TestStatus::Pass
-                }
+            fn prog(ctx: ::aya_ebpf::programs::TcContext) -> TestStatus {
+                TestStatus::Pass
             }
         };
         assert_eq!(expected.to_string(), expanded.to_string());
@@ -75,12 +83,12 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "xdp")]
-            fn __test_fw_act_firewall_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
-                return check(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
+            pub fn __test_fw_act_firewall_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
+                check(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32
+            }
 
-                fn check(ctx: ::aya_ebpf::programs::XdpContext) -> TestStatus {
-                    TestStatus::Pass
-                }
+            fn check(ctx: ::aya_ebpf::programs::XdpContext) -> TestStatus {
+                TestStatus::Pass
             }
         };
         assert_eq!(expected.to_string(), expanded.to_string());
