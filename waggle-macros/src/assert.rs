@@ -39,10 +39,10 @@ impl AssertProgram {
         quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
-            #vis fn #outer_fn(ctx: *mut ::aya_ebpf::bindings::__sk_buff) -> i32 {
+            #vis fn #outer_fn(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
                 let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
-                let tc_ctx = ::aya_ebpf::programs::TcContext::new(ctx);
-                let mut test_suite = match ::waggle_ebpf::suite::TestSuite::new(#name, file!()) {
+                let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
+                let mut test_suite = match ::waggle_ebpf::suite::TestSuite::new(#name, ::core::file!()) {
                     None => return ::waggle_ebpf::wire::TestStatus::FrameworkError as i32,
                     Some(s) => s,
                 };
@@ -88,10 +88,10 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
-            fn __test_fw_assert_my_test(ctx: *mut ::aya_ebpf::bindings::__sk_buff) -> i32 {
+            fn __test_fw_assert_my_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
                 let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
-                let tc_ctx = ::aya_ebpf::programs::TcContext::new(ctx);
-                let mut test_suite = match ::waggle_ebpf::suite::TestSuite::new("my_test", file!()) {
+                let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
+                let mut test_suite = match ::waggle_ebpf::suite::TestSuite::new("my_test", ::core::file!()) {
                     None => return ::waggle_ebpf::wire::TestStatus::FrameworkError as i32,
                     Some(s) => s,
                 };
@@ -131,8 +131,8 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "xdp")]
-            fn __test_fw_assert_firewall_test(ctx: *mut ::aya_ebpf::bindings::xdp_md) -> u32 {
-                return check(::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
+            fn __test_fw_assert_firewall_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
+                return check(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
 
                 fn check(ctx: ::aya_ebpf::programs::XdpContext) -> ::waggle_ebpf::wire::TestStatus {
                     ::waggle_ebpf::wire::TestStatus::Pass

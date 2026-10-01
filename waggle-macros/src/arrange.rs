@@ -46,9 +46,9 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
-            fn __test_fw_arrange_my_test(ctx: *mut ::aya_ebpf::bindings::__sk_buff) -> i32 {
+            fn __test_fw_arrange_my_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
                 let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
-                let tc_ctx = ::aya_ebpf::programs::TcContext::new(ctx);
+                let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
                 return prog(tc_ctx) as i32;
 
                 fn prog(ctx: ::aya_ebpf::programs::TcContext) -> TestStatus {
@@ -75,8 +75,8 @@ mod tests {
         let expected = quote! {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "xdp")]
-            fn __test_fw_arrange_firewall_test(ctx: *mut ::aya_ebpf::bindings::xdp_md) -> u32 {
-                return check(::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
+            fn __test_fw_arrange_firewall_test(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
+                return check(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
 
                 fn check(ctx: ::aya_ebpf::programs::XdpContext) -> TestStatus {
                     TestStatus::Pass

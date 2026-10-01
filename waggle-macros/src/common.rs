@@ -51,9 +51,9 @@ pub(crate) fn passthrough_tc(kind: &str, name: &str, item: &ItemFn) -> TokenStre
     quote! {
         #[unsafe(no_mangle)]
         #[unsafe(link_section = "classifier")]
-        #vis fn #outer_fn(ctx: *mut ::aya_ebpf::bindings::__sk_buff) -> i32 {
+        #vis fn #outer_fn(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
             let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
-            let tc_ctx = ::aya_ebpf::programs::TcContext::new(ctx);
+            let tc_ctx = ::waggle_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
             return #inner_fn(tc_ctx) as i32;
 
             #item
@@ -68,8 +68,8 @@ pub(crate) fn passthrough_xdp(kind: &str, name: &str, item: &ItemFn) -> TokenStr
     quote! {
         #[unsafe(no_mangle)]
         #[unsafe(link_section = "xdp")]
-        #vis fn #outer_fn(ctx: *mut ::aya_ebpf::bindings::xdp_md) -> u32 {
-            return #inner_fn(::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
+        #vis fn #outer_fn(ctx: *mut ::waggle_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
+            return #inner_fn(::waggle_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32;
 
             #item
         }
