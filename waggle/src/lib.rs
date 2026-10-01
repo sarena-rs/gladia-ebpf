@@ -61,3 +61,37 @@ pub enum TestRunnerError {
 }
 
 pub type Res<T> = Result<T, TestRunnerError>;
+
+//
+//
+//
+
+pub fn waggle_build() {
+    // let config = Config::new().scan_src().generate_mapping();
+    // config.run().unwrap();
+}
+
+// Generate:
+// #[doc(hidden)]
+// pub mod __generated {
+//   pub static CALLS: &[(&str, u32)] = &[
+//     ("hello", 1"),
+//     ("world", 2"),
+// ];
+// }
+
+#[macro_export]
+macro_rules! tail_call {
+    ("hello") => {
+        1u32
+    };
+    ("world") => {
+        2u32
+    };
+}
+
+// include_generated!();
+// expands to:
+// include!(concat!(env!("OUT_DIR"), "/my_framework.rs"));
+
+//

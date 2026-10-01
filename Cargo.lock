@@ -371,6 +371,7 @@ dependencies = [
  "aya-ebpf",
  "network-types",
  "serde",
+ "waggle",
  "waggle-ebpf",
  "which",
 ]

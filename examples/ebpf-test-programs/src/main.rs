@@ -16,6 +16,12 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 #[unsafe(no_mangle)]
 static LICENSE: [u8; 13] = *b"Dual MIT/GPL\0";
 
+// waggle::include_generated!();
+
+// fn test() {
+//     waggle::tail_call!("hello");
+// }
+
 #[used]
 #[unsafe(link_section = ".test_entry_calls")]
 static TEST_ENTRY_CALLS: TestEntryHeader<3> = TestEntryHeader {
