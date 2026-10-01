@@ -1,0 +1,9 @@
+# Everything in this workspace is an eBPF program, so build for the eBPF target
+# by default. Without this, a plain `cargo build`/`cargo clippy` here (or
+# rust-analyzer) builds for the host and fails with "unwinding panics are not
+# supported without std". Merged with the repository's `.cargo/config.toml`.
+[build]
+target = "bpfel-unknown-none"
+
+[unstable]
+build-std = ["core"]

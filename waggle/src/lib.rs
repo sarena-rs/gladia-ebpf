@@ -65,9 +65,15 @@ pub type Res<T> = Result<T, TestRunnerError>;
 //
 //
 
-pub fn waggle_build() {
+pub fn build_mapping() {
     // let config = Config::new().scan_src().generate_mapping();
     // config.run().unwrap();
+
+    // waggle::Builder::new()
+    //     .scan("src")
+    //     .generate("calls.rs")
+    //     .run()
+    //     .unwrap();
 }
 
 // Generate:

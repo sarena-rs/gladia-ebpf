@@ -20,6 +20,15 @@ thiserror = { workspace = true, default-features = false }
 [build-dependencies]
 which = { workspace = true }
 
+# eBPF programs cannot have tests: the eBPF target has no `test` crate, and
+# test builds force `panic = "unwind"`, which breaks `build-std`.
+[lib]
+test = false
+doctest = false
+bench = false
+
 [[bin]]
 name = "ebpf-programs"
 path = "src/main.rs"
+test = false
+bench = false

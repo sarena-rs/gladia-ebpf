@@ -27,25 +27,7 @@ include!("../../target/ebpf-objects/ebpf-test-programs.rs");
 #[test]
 #[ignore = "requires CAP_NET_ADMIN/CAP_SYS_ADMIN and a writable /run/netns"]
 fn ebpf_test_runner() -> Res<()> {
-    let (metadata, little_endian) = find_entry_calls(TEST_PROGRAMS.bytes).expect("");
-    let mut reader = Reader::new(metadata, little_endian);
-    let version = reader.read_u32()?;
-    println!("version: {version}");
-
-    let file_name = reader.read_str(STRING_SIZE)?;
-    println!("file_name: {file_name}");
-
-    let size = reader.read_u32()?;
-    println!("size: {size}, ({})", core::mem::size_of::<TestEntryCall>());
-
-    let count = reader.read_u32()? as usize;
-    println!("count: {count}");
-
-    for _ in 0..count {
-        let index = reader.read_u32()?;
-        let name = reader.read_str(STRING_SIZE)?;
-        println!("{index} --> {name}")
-    }
+    find_entry_calls(TEST_PROGRAMS.bytes).expect("");
 
     run_ebpf_test(
         PIN_DIR,
@@ -55,15 +37,33 @@ fn ebpf_test_runner() -> Res<()> {
     )
 }
 
-fn find_entry_calls(data: &[u8]) -> anyhow::Result<(&[u8], bool)> {
+fn find_entry_calls(data: &[u8]) -> anyhow::Result<()> {
     let file = object::File::parse(data)?;
     for section in file.sections() {
         if section.name()? == ".test_entry_calls" {
-            return Ok((section.data()?, file.is_little_endian()));
+            let metadata = section.data()?;
+            let little_endian = file.is_little_endian();
+            let mut reader = Reader::new(metadata, little_endian);
+            let version = reader.read_u32()?;
+            println!("version: {version}");
+
+            let file_name = reader.read_str(STRING_SIZE)?;
+            println!("file_name: {file_name}");
+
+            let size = reader.read_u32()?;
+            println!("size: {size}, ({})", core::mem::size_of::<TestEntryCall>());
+
+            let count = reader.read_u32()? as usize;
+            println!("count: {count}");
+
+            for _ in 0..count {
+                let index = reader.read_u32()?;
+                let name = reader.read_str(STRING_SIZE)?;
+                println!("{index} --> {name}")
+            }
         }
     }
-
-    anyhow::bail!("missing .test_entry_calls section")
+    Ok(())
 }
 
 use std::io::{self, Cursor, Read};

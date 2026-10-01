@@ -41,6 +41,13 @@ similar_names = { level = "allow", priority = 1 }
 too_many_lines = { level = "allow", priority = 1 }
 unreadable_literal = { level = "allow", priority = 1 }
 
+# eBPF has no unwinding: abort on panic in every profile.
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
 [profile.ebpf]
 inherits = "release"
 opt-level = 3

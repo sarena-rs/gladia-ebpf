@@ -8,21 +8,21 @@ pub(crate) fn expand(item: TokenStream) -> TokenStream {
         #[unsafe(link_section = ".test_entry_calls")]
         static __TEST_ENTRY_CALLS: TestEntryHeader<3> = TestEntryHeader {
             version: 1,
-            file_name: make_name(b"main.rs"),
+            file_name: make_name(b"yyy.rs"),
             count: 3u32,
             size: core::mem::size_of::<TestEntryCall>() as u32,
             entries: [
                 TestEntryCall {
                     index: 0u32,
-                    name: make_name(b"filter_ipv4"),
+                    name: make_name(b"aaa"),
                 },
                 TestEntryCall {
                     index: 1u32,
-                    name: make_name(b"filter_tcp"),
+                    name: make_name(b"bbb"),
                 },
                 TestEntryCall {
                     index: 2u32,
-                    name: make_name(b"filter_udp"),
+                    name: make_name(b"ccc"),
                 },
             ],
         };

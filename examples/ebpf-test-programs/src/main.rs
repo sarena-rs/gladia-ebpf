@@ -24,7 +24,7 @@ fn test() {
 
 #[used]
 #[unsafe(link_section = ".test_entry_calls")]
-static TEST_ENTRY_CALLS: TestEntryHeader<3> = TestEntryHeader {
+static TEST_ENTRY_CALLS1: TestEntryHeader<3> = TestEntryHeader {
     version: 1,
     file_name: make_name(b"main.rs"),
     count: 3u32,
@@ -43,6 +43,19 @@ static TEST_ENTRY_CALLS: TestEntryHeader<3> = TestEntryHeader {
             name: make_name(b"filter_udp"),
         },
     ],
+};
+
+#[used]
+#[unsafe(link_section = ".test_entry_calls")]
+static TEST_ENTRY_CALLS2: TestEntryHeader<1> = TestEntryHeader {
+    version: 1,
+    file_name: make_name(b"xxx.rs"),
+    count: 1u32,
+    size: core::mem::size_of::<TestEntryCall>() as u32,
+    entries: [TestEntryCall {
+        index: 9u32,
+        name: make_name(b"blabla"),
+    }],
 };
 
 const fn make_name<const N: usize>(name: &[u8]) -> [u8; N] {
