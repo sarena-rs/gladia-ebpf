@@ -1,0 +1,52 @@
+# Example eBPF programs, in their own workspace so they are never resolved
+# together with the userspace crates.
+#
+# Built with `just build-ebpf`, which targets this workspace via xtask.
+[workspace]
+members = ["ebpf-programs", "ebpf-test-programs"]
+
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+version = "0.1.0"
+
+[workspace.dependencies]
+# Must match the source of `aya-ebpf` used by `waggle-ebpf` in the root
+# workspace, so both resolve to the same crate.
+aya-ebpf = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
+aya-log-ebpf = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
+bitflags = { version = "2", default-features = false }
+network-types = { version = "0.2", default-features = false }
+num-traits = { version = "0.2", default-features = false }
+serde = { version = "1", default-features = false, features = ["derive"] }
+thiserror = { version = "2", default-features = false }
+which = { version = "8" }
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+
+cast_possible_truncation = { level = "allow", priority = 1 }
+cast_possible_wrap = { level = "allow", priority = 1 }
+cast_sign_loss = { level = "allow", priority = 1 }
+inline_always = { level = "allow", priority = 1 }
+items_after_statements = { level = "allow", priority = 1 }
+missing_errors_doc = { level = "allow", priority = 1 }
+missing_panics_doc = { level = "allow", priority = 1 }
+must_use_candidate = { level = "allow", priority = 1 }
+similar_names = { level = "allow", priority = 1 }
+too_many_lines = { level = "allow", priority = 1 }
+unreadable_literal = { level = "allow", priority = 1 }
+
+[profile.ebpf]
+inherits = "release"
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = 2
+strip = false
+overflow-checks = false

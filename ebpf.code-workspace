@@ -1,18 +1,16 @@
 {
     "folders": [
-        { "name": "ebpf-programs", "path": "ebpf-programs" },
-        { "name": "ebpf-test-programs", "path": "ebpf-test-programs" }
+        { "name": "examples", "path": "examples" }
     ],
     "settings": {
+        // The examples workspace, checked for the eBPF target. The userspace
+        // crates are checked by opening the repository root instead.
         "rust-analyzer.cargo.target": "bpfel-unknown-none",
         "rust-analyzer.cargo.buildStd": ["core"],
         "rust-analyzer.check.overrideCommand": [
             "cargo",
             "check",
-            "-p",
-            "ebpf-programs",
-            "-p",
-            "ebpf-test-programs",
+            "--workspace",
             "--profile",
             "ebpf",
             "--target",

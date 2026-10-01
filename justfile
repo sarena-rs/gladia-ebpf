@@ -11,11 +11,13 @@ check: build-ebpf
 
 # clean up target
 clean:
-    cargo clean    
+    cargo clean
+    cargo clean --manifest-path examples/Cargo.toml
 
 # fmt up target
 fmt:
     cargo fmt
+    cargo fmt --manifest-path examples/Cargo.toml
 
 # clippy
 clippy: build-ebpf
@@ -25,14 +27,12 @@ clippy: build-ebpf
 test: build-ebpf
     cargo test --workspace \
         --exclude waggle \
-        --exclude ebpf-programs \
-        --exclude ebpf-test-programs \
         -- --no-capture
 
 # Build eBPF programs
 build-ebpf:
-    cargo run --release --package xtask -- build-ebpf -p ebpf-programs --const PROGRAMS -o target/ebpf-objects/ebpf-programs.rs
-    cargo run --release --package xtask -- build-ebpf -p ebpf-test-programs --const TEST_PROGRAMS -o target/ebpf-objects/ebpf-test-programs.rs
+    cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-programs --const PROGRAMS -o target/ebpf-objects/ebpf-programs.rs
+    cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-test-programs --const TEST_PROGRAMS -o target/ebpf-objects/ebpf-test-programs.rs
 
 ebpf-test: build-ebpf 
     #!/usr/bin/env bash

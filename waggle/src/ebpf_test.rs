@@ -4,7 +4,7 @@ use waggle_shared::{
     TO_CONTAINER, TO_HOST, TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestEntryCall,
 };
 
-use crate::Res;
+use crate::{Res, ebpf_test_runner::run_ebpf_test};
 
 const ENTRY_CALL_PROGRAMS: &[(u32, &str)] = &[
     (FROM_CONTAINER, "from_container"),
@@ -48,12 +48,12 @@ fn ebpf_test_runner() -> Res<()> {
         println!("{index} --> {name}")
     }
 
-    // run_ebpf_test(
-    //     PIN_DIR,
-    //     PROGRAMS.bytes,
-    //     TEST_PROGRAMS.bytes,
-    //     ENTRY_CALL_PROGRAMS,
-    // )
+    run_ebpf_test(
+        PIN_DIR,
+        PROGRAMS.bytes,
+        TEST_PROGRAMS.bytes,
+        ENTRY_CALL_PROGRAMS,
+    );
 
     Ok(())
 }

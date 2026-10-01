@@ -6,16 +6,15 @@ members = [
     # Shared (userspace & eBPF)
     "waggle-shared",
 
-    # eBPF framework 
+    # eBPF framework
     "waggle-ebpf",
-
-    # eBPF programs
-    "examples/ebpf-programs",
-    "examples/ebpf-test-programs",
 
     # Build tooling
     "xtask",
 ]
+
+# The example eBPF programs form their own workspace (see examples/Cargo.toml).
+exclude = ["examples"]
 
 default-members = [
     "waggle",
@@ -24,8 +23,7 @@ default-members = [
     # Shared (userspace & eBPF)
     "waggle-shared",
 
-    # Integration tests is not included here because it needs privileges to run.
-    # eBPF crates are not included because these are build separately by xtask
+    # waggle-ebpf is not included because it only builds for the eBPF target
     # the xtask is also not included because its a build crate
 ]
 
@@ -106,13 +104,3 @@ unreadable_literal = { level = "allow", priority = 1 }
 
 cargo_common_metadata = { level = "allow", priority = 1 }
 multiple_crate_versions = { level = "allow", priority = 1 }
-
-[profile.ebpf]
-inherits = "release"
-opt-level = 3
-lto = true
-codegen-units = 1
-panic = "abort"
-debug = 2
-strip = false
-overflow-checks = false

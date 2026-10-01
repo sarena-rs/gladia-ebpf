@@ -23,6 +23,11 @@ pub struct BuildEbpfOptions {
     #[clap(long = "package", short = 'p', value_name = "PKG")]
     pub package: String,
 
+    /// `Cargo.toml` of the workspace containing the package. Defaults to the
+    /// workspace of the current directory.
+    #[clap(long, value_name = "PATH")]
+    pub manifest_path: Option<PathBuf>,
+
     /// Path of the generated Rust file. The ELF object is written next to it
     /// with the same file stem and an `.o` extension.
     #[clap(long = "output", short = 'o', value_name = "FILE")]
@@ -50,7 +55,11 @@ pub(crate) fn run(opts: BuildEbpfOptions) -> Result<()> {
     // `cargo metadata` gives us the workspace root (so paths are always
     // correct regardless of where xtask is invoked from) and lets us validate
     // the requested package name up front.
-    let metadata = MetadataCommand::new()
+    let mut metadata_cmd = MetadataCommand::new();
+    if let Some(manifest_path) = &opts.manifest_path {
+        metadata_cmd.manifest_path(manifest_path);
+    }
+    let metadata = metadata_cmd
         .no_deps()
         .exec()
         .context("failed to run `cargo metadata`")?;
