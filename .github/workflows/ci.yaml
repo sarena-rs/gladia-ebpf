@@ -40,9 +40,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Python dependencies
-        run: just setup
-
       - name: Build
         run: just build
 
