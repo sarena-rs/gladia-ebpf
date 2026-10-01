@@ -1,4 +1,4 @@
-#[cfg(feature = "std")]
+#[cfg(feature = "user")]
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 pub const SCAPY_MAX_BUF: usize = 1518;
@@ -18,10 +18,10 @@ pub struct ScapyAssert {
     pub actual_buf: [u8; SCAPY_MAX_BUF],
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "user")]
 unsafe impl aya::Pod for ScapyAssert {}
 
-#[cfg(feature = "std")]
+#[cfg(feature = "user")]
 impl Serialize for ScapyAssert {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -63,14 +63,14 @@ impl ScapyAssert {
 
 pub static SCAPY_ASSERT_NULL: ScapyAssert = ScapyAssert::null();
 
-#[cfg(feature = "std")]
+#[cfg(feature = "user")]
 fn encode_to_string(bytes: &[u8]) -> String {
     let mut out = vec![0u8; bytes.len() * 2];
     hex::encode_to_slice(bytes, &mut out).unwrap();
     String::from_utf8(out).unwrap()
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "user")]
 fn convert<S>(bytes: &[u8; SCAPY_MAX_STR_LEN]) -> Result<String, S::Error>
 where
     S: Serializer,

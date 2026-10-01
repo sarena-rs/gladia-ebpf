@@ -1,10 +1,9 @@
 use object::{Object as _, ObjectSection as _};
+use waggle::{EbpfObject, Res, run_ebpf_test};
 use waggle_shared::{
     FROM_CONTAINER, FROM_HOST, FROM_NETDEV, FROM_OVERLAY, FROM_WIREGUARD, STRING_SIZE,
     TO_CONTAINER, TO_HOST, TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestEntryCall,
 };
-
-use waggle::{EbpfObject, Res, run_ebpf_test};
 
 const ENTRY_CALL_PROGRAMS: &[(u32, &str)] = &[
     (FROM_CONTAINER, "from_container"),
@@ -42,7 +41,7 @@ fn ebpf_test_runner() -> Res<()> {
     let count = reader.read_u32()? as usize;
     println!("count: {count}");
 
-    for i in 0..count {
+    for _ in 0..count {
         let index = reader.read_u32()?;
         let name = reader.read_str(STRING_SIZE)?;
         println!("{index} --> {name}")
@@ -53,9 +52,7 @@ fn ebpf_test_runner() -> Res<()> {
         PROGRAMS.bytes,
         TEST_PROGRAMS.bytes,
         ENTRY_CALL_PROGRAMS,
-    );
-
-    Ok(())
+    )
 }
 
 fn find_entry_calls(data: &[u8]) -> anyhow::Result<(&[u8], bool)> {

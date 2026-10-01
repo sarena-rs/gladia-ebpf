@@ -11,11 +11,7 @@ use aya::{
     programs::SchedClassifier,
 };
 use regex::Regex;
-use waggle_shared::{
-    FROM_CONTAINER, FROM_HOST, FROM_NETDEV, FROM_OVERLAY, FROM_WIREGUARD, ScapyAssert,
-    TEST_RESULT_MAP_SIZE, TO_CONTAINER, TO_HOST, TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestStatus,
-    tlv_reader,
-};
+use waggle_shared::{ScapyAssert, TEST_RESULT_MAP_SIZE, TestStatus, tlv_reader};
 
 use crate::{Res, TestRunnerError, report};
 
@@ -23,8 +19,6 @@ const PAGE_SIZE: usize = 4096;
 const CTX_SIZE: usize = 256;
 const HEADROOM: usize = 256;
 const TAILROOM: usize = 320;
-
-const PIN_DIR: &str = "/sys/fs/bpf/waggle";
 
 #[derive(Default)]
 struct ProgramSet {

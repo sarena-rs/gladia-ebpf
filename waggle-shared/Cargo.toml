@@ -14,8 +14,9 @@ version.workspace = true
 workspace = true
 
 [features]
-default = ["std"]
-std = ["dep:aya", "dep:serde"]
+default = []
+# Userspace side: std, plus aya and serde support for the shared types.
+user = ["dep:aya", "dep:serde"]
 
 [dependencies]
 aya = { workspace = true, optional = true }

@@ -724,7 +724,6 @@ dependencies = [
  "thiserror",
  "waggle-macros",
  "waggle-shared",
- "which",
 ]
 
 [[package]]

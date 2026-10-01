@@ -1,10 +1,10 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-#![no_builtins]
+#![cfg_attr(not(feature = "user"), no_std)]
+#![cfg_attr(not(feature = "user"), no_builtins)]
 
 pub mod constants;
 pub mod scapy_assert;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "user")]
 pub mod tlv_reader;
 
 pub mod tlv_writer;

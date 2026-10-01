@@ -14,7 +14,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-waggle-shared = { workspace = true, features = ["std"] }
+waggle-shared = { workspace = true, features = ["user"] }
 
 aya = { workspace = true }
 regex = { workspace = true }

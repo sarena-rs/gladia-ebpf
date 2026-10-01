@@ -21,6 +21,3 @@ aya-ebpf = { workspace = true }
 network-types = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true, default-features = false }
-
-[build-dependencies]
-which = { workspace = true }
