@@ -33,8 +33,8 @@ resolver = "2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/erwin-kok/"
-keywords = ["Rust", "eBPF", "TCX", "XDP", "test framework"]
+repository = "https://github.com/sarena-rs/ebpf-test-framework"
+keywords = ["eBPF", "TCX", "XDP", "test-framework"]
 version = "0.1.0"
 
 [workspace.dependencies]

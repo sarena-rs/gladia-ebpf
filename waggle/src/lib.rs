@@ -1,13 +1,12 @@
-#![cfg(test)]
-
 use std::str::Utf8Error;
 
 use aya::{EbpfError, maps::MapError, programs::ProgramError};
 use waggle_shared::tlv_reader::ParseError;
 
-mod ebpf_test;
 mod ebpf_test_runner;
 mod report;
+
+pub use ebpf_test_runner::run_ebpf_test;
 
 /// A compiled eBPF ELF object embedded in the binary.
 #[derive(Debug, Clone, Copy)]

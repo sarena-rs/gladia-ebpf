@@ -37,7 +37,7 @@ build-ebpf:
 ebpf-test: build-ebpf 
     #!/usr/bin/env bash
     set -euo pipefail
-    exe=$(cargo test --no-run -p waggle --message-format=json \
+    exe=$(cargo test --no-run -p waggle --test ebpf_test --message-format=json \
         | jq -r 'select(.profile.test == true) | .executable')
     sudo "$exe" --ignored --no-capture
 

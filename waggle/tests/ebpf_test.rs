@@ -4,7 +4,7 @@ use waggle_shared::{
     TO_CONTAINER, TO_HOST, TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestEntryCall,
 };
 
-use crate::{Res, ebpf_test_runner::run_ebpf_test};
+use waggle::{EbpfObject, Res, run_ebpf_test};
 
 const ENTRY_CALL_PROGRAMS: &[(u32, &str)] = &[
     (FROM_CONTAINER, "from_container"),
