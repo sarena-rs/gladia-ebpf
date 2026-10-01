@@ -1,6 +1,8 @@
 [package]
 name = "waggle-macros"
-publish = false
+description = "Procedural macros for waggle-ebpf. Internal: depend on waggle-ebpf instead"
+categories = ["development-tools::testing"]
+keywords.workspace = true
 
 edition.workspace = true
 license.workspace = true

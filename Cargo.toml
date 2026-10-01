@@ -34,10 +34,15 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/sarena-rs/ebpf-test-framework"
-keywords = ["eBPF", "TCX", "XDP", "test-framework"]
+keywords = ["ebpf", "xdp", "tcx", "testing", "aya"]
 version = "0.1.0"
 
 [workspace.dependencies]
+# Internal crates. Released in lockstep, so pinned to the exact version: the
+# wire format between waggle and waggle-ebpf must match.
+waggle-macros = { path = "waggle-macros", version = "=0.1.0" }
+waggle-shared = { path = "waggle-shared", version = "=0.1.0", default-features = false }
+
 anyhow = { version = "1" }
 async-trait = "0.1.89"
 aya = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }

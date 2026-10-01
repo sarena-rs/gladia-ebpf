@@ -1,6 +1,8 @@
 [package]
 name = "waggle-shared"
-publish = false
+description = "Types and wire format shared by waggle and waggle-ebpf. Internal: depend on waggle or waggle-ebpf instead"
+categories = ["development-tools::testing", "no-std"]
+keywords.workspace = true
 
 edition.workspace = true
 license.workspace = true

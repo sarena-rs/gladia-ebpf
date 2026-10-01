@@ -1,5 +1,8 @@
 [package]
 name = "waggle-ebpf"
+description = "eBPF-side library for waggle tests: arrange/act/assert program macros, assertions and test logging"
+categories = ["development-tools::testing", "network-programming", "no-std"]
+keywords.workspace = true
 
 edition.workspace = true
 license.workspace = true
@@ -11,8 +14,8 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-waggle-shared = { path = "../waggle-shared", default-features = false }
-waggle-macros = { path = "../waggle-macros" }
+waggle-shared = { workspace = true }
+waggle-macros = { workspace = true }
 
 aya-ebpf = { workspace = true }
 network-types = { workspace = true }

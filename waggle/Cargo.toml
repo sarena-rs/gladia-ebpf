@@ -1,6 +1,8 @@
 [package]
 name = "waggle"
-publish = false
+description = "Test framework for eBPF programs: loads waggle test programs and runs them in the kernel with BPF_PROG_TEST_RUN"
+categories = ["development-tools::testing", "network-programming"]
+keywords.workspace = true
 
 edition.workspace = true
 license.workspace = true
@@ -12,7 +14,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-waggle-shared = { path = "../waggle-shared", features = ["std"] }
+waggle-shared = { workspace = true, features = ["std"] }
 
 aya = { workspace = true }
 regex = { workspace = true }
