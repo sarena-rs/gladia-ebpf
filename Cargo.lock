@@ -710,6 +710,7 @@ dependencies = [
  "object 0.37.3",
  "regex",
  "serde_json",
+ "syn 3.0.6",
  "thiserror",
  "waggle-shared",
 ]

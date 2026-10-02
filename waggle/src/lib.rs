@@ -3,9 +3,13 @@ use std::str::Utf8Error;
 use aya::{EbpfError, maps::MapError, programs::ProgramError};
 use waggle_shared::tlv_reader::ParseError;
 
+mod builder;
+mod collect;
+mod constants;
 mod ebpf_test_runner;
 mod report;
 
+pub use builder::build_mapping;
 pub use ebpf_test_runner::run_ebpf_test;
 
 /// A compiled eBPF ELF object embedded in the binary.
@@ -60,37 +64,3 @@ pub enum TestRunnerError {
 }
 
 pub type Res<T> = Result<T, TestRunnerError>;
-
-//
-//
-//
-
-pub fn build_mapping() {
-    // let config = Config::new().scan_src().generate_mapping();
-    // config.run().unwrap();
-
-    // waggle::Builder::new()
-    //     .scan("src")
-    //     .generate("calls.rs")
-    //     .run()
-    //     .unwrap();
-}
-
-// Generate:
-// #[doc(hidden)]
-// pub mod __generated {
-//   pub static CALLS: &[(&str, u32)] = &[
-//     ("hello", 1"),
-//     ("world", 2"),
-// ];
-// }
-
-#[macro_export]
-macro_rules! tail_call {
-    ("hello") => {
-        1u32
-    };
-    ("world") => {
-        2u32
-    };
-}

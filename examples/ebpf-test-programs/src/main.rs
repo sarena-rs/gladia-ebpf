@@ -2,9 +2,10 @@
 #![no_main]
 #![allow(nonstandard_style, dead_code)]
 
+use aya_ebpf::programs::TcContext;
 #[cfg(not(test))]
 use ebpf_test_programs::do_panic;
-use waggle_ebpf::{TestEntryCall, TestEntryHeader, tail_call};
+use waggle_ebpf::{TestEntryCall, TestEntryHeader};
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -18,8 +19,12 @@ static LICENSE: [u8; 13] = *b"Dual MIT/GPL\0";
 
 waggle_ebpf::include_generated!();
 
-fn test() {
-    tail_call!("hello");
+fn test(ctx: TcContext) {
+    tail_call!(&ctx, "hello");
+    tail_call!(&ctx, "world");
+    tail_call!(&ctx, "hello");
+
+    tail_call!(&ctx, "bladiebla");
 }
 
 #[used]
