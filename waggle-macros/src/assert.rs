@@ -5,11 +5,10 @@ use syn::ItemFn;
 use crate::common::{ProgramAttrs, ProgramMode, outer_fn_ident, passthrough_xdp};
 
 pub(crate) fn expand(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    match AssertProgram::parse(attrs.into(), item.into()) {
+    match AssertProgram::parse(attrs, item) {
         Ok(prog) => prog.expand(),
         Err(err) => err.to_compile_error(),
     }
-    .into()
 }
 
 pub(crate) struct AssertProgram {

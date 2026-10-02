@@ -1,5 +1,7 @@
 use std::{collections::HashSet, env, fmt::Write, fs, path::PathBuf};
 
+use waggle_shared::{TestEntryCall, TestEntryHeader};
+
 use crate::{collect::visit_dir, constants::TAIL_CALL_MACRO_NAME};
 
 pub fn build_mapping() {
@@ -27,12 +29,12 @@ pub fn build_mapping() {
 fn build_call_map(calls: &[String], contents: &mut String) {
     writeln!(
         contents,
-        "#[aya_ebpf::macros::map(name = \"__waggle_entry_call_map\")]\n"
+        "#[aya_ebpf::macros::map(name = \"__waggle_tail_call_map\")]\n"
     )
     .unwrap();
     writeln!(
         contents,
-        "static __waggle_entry_call_map: aya_ebpf::maps::ProgramArray = aya_ebpf::maps::ProgramArray::with_max_entries({}, 0);\n\n",
+        "static __waggle_tail_call_map: aya_ebpf::maps::ProgramArray = aya_ebpf::maps::ProgramArray::with_max_entries({}, 0);\n\n",
         calls.len()
     )
     .unwrap();
@@ -42,12 +44,12 @@ fn build_call_table(calls: &[String], contents: &mut String) {
     writeln!(contents, "#[doc(hidden)]").unwrap();
     writeln!(
         contents,
-        "#[unsafe(link_section = \".waggle_entry_calls\")]"
+        "#[unsafe(link_section = \".waggle_tail_call_section\")]"
     )
     .unwrap();
     writeln!(
         contents,
-        "pub static __WAGGLE_CALL_MAP: &[(&str, u32)] = &[\n"
+        "pub static __WAGGLE_TAIL_CALL_MAP: &[(&str, u32)] = &[\n"
     )
     .unwrap();
     for (index, call) in calls.iter().enumerate() {
@@ -62,7 +64,7 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
     for (index, call) in calls.iter().enumerate() {
         writeln!(
             contents,
-            "    ($ctx:expr, {call:?}) => {{ unsafe {{ __waggle_entry_call_map.tail_call($ctx, {index}u32) }} }};"
+            "    ($ctx:expr, {call:?}) => {{ unsafe {{ __waggle_tail_call_map.tail_call($ctx, {index}u32) }} }};"
         )
         .unwrap();
     }
@@ -113,3 +115,52 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
 //         },
 //     ],
 // };
+
+#[used]
+#[unsafe(link_section = ".test_entry_calls")]
+static TEST_ENTRY_CALLS1: TestEntryHeader<3> = TestEntryHeader {
+    version: 1,
+    file_name: make_name(b"main.rs"),
+    count: 3u32,
+    size: core::mem::size_of::<TestEntryCall>() as u32,
+    entries: [
+        TestEntryCall {
+            index: 0u32,
+            name: make_name(b"filter_ipv4"),
+        },
+        TestEntryCall {
+            index: 1u32,
+            name: make_name(b"filter_tcp"),
+        },
+        TestEntryCall {
+            index: 2u32,
+            name: make_name(b"filter_udp"),
+        },
+    ],
+};
+
+#[used]
+#[unsafe(link_section = ".test_entry_calls")]
+static TEST_ENTRY_CALLS2: TestEntryHeader<1> = TestEntryHeader {
+    version: 1,
+    file_name: make_name(b"xxx.rs"),
+    count: 1u32,
+    size: core::mem::size_of::<TestEntryCall>() as u32,
+    entries: [TestEntryCall {
+        index: 9u32,
+        name: make_name(b"blabla"),
+    }],
+};
+
+const fn make_name<const N: usize>(name: &[u8]) -> [u8; N] {
+    let mut result = [0u8; N];
+
+    // TODO: panic if name.len() > N
+    let mut i = 0;
+    while i < name.len() && i < N {
+        result[i] = name[i];
+        i += 1;
+    }
+
+    result
+}

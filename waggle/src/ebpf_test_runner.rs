@@ -22,9 +22,9 @@ const TAILROOM: usize = 320;
 
 #[derive(Default)]
 struct ProgramSet {
-    arrange_name: Option<String>,
-    act_name: Option<String>,
-    assert_name: Option<String>,
+    arrange: Option<String>,
+    act: Option<String>,
+    assert: Option<String>,
 }
 
 pub fn run_ebpf_test(
@@ -85,48 +85,48 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
             match &caps["ptype"] {
                 "arrange" => {
                     assert!(
-                        program_set.arrange_name.is_none(),
+                        program_set.arrange.is_none(),
                         "multiple arrange programs found for '{test_name}'"
                     );
-                    program_set.arrange_name = Some(prog_name.to_owned());
+                    program_set.arrange = Some(prog_name.to_owned());
                 }
                 "act" => {
                     assert!(
-                        program_set.act_name.is_none(),
+                        program_set.act.is_none(),
                         "multiple act programs found for '{test_name}'"
                     );
-                    program_set.act_name = Some(prog_name.to_owned());
+                    program_set.act = Some(prog_name.to_owned());
                 }
                 "assert" => {
                     assert!(
-                        program_set.assert_name.is_none(),
+                        program_set.assert.is_none(),
                         "multiple assert programs found for '{test_name}'"
                     );
-                    program_set.assert_name = Some(prog_name.to_owned());
+                    program_set.assert = Some(prog_name.to_owned());
                 }
                 _ => {
                     unreachable!();
                 }
-            };
+            }
         }
     }
 
     // Validate: every test must have a check program.
     for (test_name, program_set) in &groups {
-        if program_set.assert_name.is_none() {
-            return Err(TestRunnerError::MissingCheck(test_name.to_string()));
+        if program_set.assert.is_none() {
+            return Err(TestRunnerError::MissingCheck(test_name.clone()));
         }
     }
 
     // Load all matched programs.
     for program_set in groups.values() {
-        if let Some(name) = &program_set.arrange_name {
+        if let Some(name) = &program_set.arrange {
             load_bpf_program(test_bpf, name)?;
         }
-        if let Some(name) = &program_set.act_name {
+        if let Some(name) = &program_set.act {
             load_bpf_program(test_bpf, name)?;
         }
-        if let Some(name) = &program_set.assert_name {
+        if let Some(name) = &program_set.assert {
             load_bpf_program(test_bpf, name)?;
         }
     }
@@ -159,17 +159,16 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
     // Build and run each TestCase.
     for (test_name, program_set) in &groups {
         let arrange_prog = program_set
-            .arrange_name
+            .arrange
             .as_deref()
             .map(|n| get_sched_classifier(test_bpf, n))
             .transpose()?;
         let act_prog = program_set
-            .act_name
+            .act
             .as_deref()
             .map(|n| get_sched_classifier(test_bpf, n))
             .transpose()?;
-        let assert_prog =
-            get_sched_classifier(test_bpf, program_set.assert_name.as_deref().unwrap())?;
+        let assert_prog = get_sched_classifier(test_bpf, program_set.assert.as_deref().unwrap())?;
         sub_test(
             test_name.as_str(),
             &mut scapy_assert_map,
@@ -185,6 +184,7 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn sub_test(
     name: &str,
     scapy_assert_map: &mut Array<MapData, ScapyAssert>,
@@ -207,9 +207,10 @@ fn sub_test(
 
     let (data, ctx) = if let Some(arrange_prog) = arrange_prog {
         let (ret, data, ctx) = run_bpf_program(arrange_prog, &data, &ctx)?;
-        if test_error(ret) {
-            panic!("[{name}] error while running arrange prog: status code ({ret})");
-        }
+        assert!(
+            !test_error(ret),
+            "[{name}] error while running arrange prog: status code ({ret})"
+        );
         (data, ctx)
     } else {
         (data, ctx)
@@ -217,9 +218,10 @@ fn sub_test(
 
     let (data, ctx) = if let Some(act_prog) = act_prog {
         let (ret, data, ctx) = run_bpf_program(act_prog, &data, &ctx)?;
-        if test_error(ret) {
-            panic!("[{name}] error while running act prog: status code ({ret})");
-        }
+        assert!(
+            !test_error(ret),
+            "[{name}] error while running act prog: status code ({ret})"
+        );
         test_suite_status_code.set(0, &ret, 0)?;
 
         (data, ctx)
@@ -234,11 +236,7 @@ fn sub_test(
     // Trim trailing zeroes — the eBPF side does not store a length
     // separately. A second map entry for the length would be cleaner
     // but this is sufficient for a fixed test buffer.
-    let written = raw
-        .iter()
-        .rposition(|&b| b != 0)
-        .map(|p| p + 1)
-        .unwrap_or(0);
+    let written = raw.iter().rposition(|&b| b != 0).map_or(0, |p| p + 1);
 
     let raw = raw[..written].to_vec();
     if raw.is_empty() {
@@ -251,9 +249,7 @@ fn sub_test(
 
     process_asserts(name, scapy_assert_map, scapy_assert_map_count)?;
 
-    if result.status == TestStatus::Fail {
-        panic!("Test failed.");
-    }
+    assert!(result.status != TestStatus::Fail, "Test failed.");
 
     Ok(())
 }
@@ -342,12 +338,11 @@ fn process_asserts(
         .write_all(&json_bytes)?;
 
     let output = child.wait_with_output()?;
-    if !output.status.success() {
-        panic!(
-            "error while tracing diff pkts: exited with {}",
-            output.status
-        );
-    }
+    assert!(
+        output.status.success(),
+        "error while tracing diff pkts: exited with {}",
+        output.status
+    );
 
     println!(
         "\n{}{}",
@@ -359,7 +354,7 @@ fn process_asserts(
 }
 
 fn test_error(ret: u32) -> bool {
-    return ret == TestStatus::Fail as u32 || ret == TestStatus::FrameworkError as u32;
+    ret == TestStatus::Fail as u32 || ret == TestStatus::FrameworkError as u32
 }
 
 fn reset_pin_dir(dir: &str) -> Res<()> {

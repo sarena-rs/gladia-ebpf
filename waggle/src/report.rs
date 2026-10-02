@@ -22,11 +22,11 @@ pub fn print_test_result(test: &TestResult) {
     for entry in &test.logs {
         println!("{}:{}:\n{}\n", test.file, entry.line, format_log(entry));
     }
-    println!("");
+    println!("\n");
 }
 
 /// Replace printf-style specifiers with their argument values in order.
-/// Supports the same specifiers as bpf_trace_printk.
+/// Supports the same specifiers as `bpf_trace_printk`.
 pub fn format_log(entry: &LogEntry) -> String {
     // Specifiers tried in order; first match at each position wins.
     const SPECS: &[(&str, bool)] = &[
@@ -60,13 +60,13 @@ pub fn format_log(entry: &LogEntry) -> String {
 
         let val = entry.args[used];
         let replacement = if spec == "%p" {
-            format!("{:#018x}", val)
+            format!("{val:#018x}")
         } else if spec.ends_with('x') {
-            format!("{:#x}", val)
+            format!("{val:#x}")
         } else if signed {
             format!("{}", val as i64)
         } else {
-            format!("{}", val)
+            format!("{val}")
         };
 
         out.replace_range(pos..pos + spec.len(), &replacement);

@@ -10,11 +10,10 @@ pub(crate) struct ActProgram {
 }
 
 pub(crate) fn expand(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    match ActProgram::parse(attrs.into(), item.into()) {
+    match ActProgram::parse(attrs, item) {
         Ok(prog) => prog.expand(),
         Err(err) => err.to_compile_error(),
     }
-    .into()
 }
 
 impl ActProgram {

@@ -5,7 +5,6 @@
 use aya_ebpf::programs::TcContext;
 #[cfg(not(test))]
 use ebpf_test_programs::do_panic;
-use waggle_ebpf::{TestEntryCall, TestEntryHeader};
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -25,53 +24,4 @@ fn test(ctx: TcContext) {
     tail_call!(&ctx, "hello");
 
     tail_call!(&ctx, "bladiebla");
-}
-
-#[used]
-#[unsafe(link_section = ".test_entry_calls")]
-static TEST_ENTRY_CALLS1: TestEntryHeader<3> = TestEntryHeader {
-    version: 1,
-    file_name: make_name(b"main.rs"),
-    count: 3u32,
-    size: core::mem::size_of::<TestEntryCall>() as u32,
-    entries: [
-        TestEntryCall {
-            index: 0u32,
-            name: make_name(b"filter_ipv4"),
-        },
-        TestEntryCall {
-            index: 1u32,
-            name: make_name(b"filter_tcp"),
-        },
-        TestEntryCall {
-            index: 2u32,
-            name: make_name(b"filter_udp"),
-        },
-    ],
-};
-
-#[used]
-#[unsafe(link_section = ".test_entry_calls")]
-static TEST_ENTRY_CALLS2: TestEntryHeader<1> = TestEntryHeader {
-    version: 1,
-    file_name: make_name(b"xxx.rs"),
-    count: 1u32,
-    size: core::mem::size_of::<TestEntryCall>() as u32,
-    entries: [TestEntryCall {
-        index: 9u32,
-        name: make_name(b"blabla"),
-    }],
-};
-
-const fn make_name<const N: usize>(name: &[u8]) -> [u8; N] {
-    let mut result = [0u8; N];
-
-    // TODO: panic if name.len() > N
-    let mut i = 0;
-    while i < name.len() && i < N {
-        result[i] = name[i];
-        i += 1;
-    }
-
-    result
 }
