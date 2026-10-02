@@ -1,10 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    env,
-    fmt::Write,
-    fs,
-    path::PathBuf,
-};
+use std::{collections::BTreeSet, env, fmt::Write, fs, path::PathBuf};
 
 use gladia_shared::STRING_SIZE;
 
@@ -14,80 +8,72 @@ use crate::{
 };
 
 /// The tail calls of one source file, each with its index into the program array.
-struct IndexedCallItem {
-    calls: Vec<IndexedCall>,
-    file_name: String,
+struct IndexedCallItem<'a> {
+    calls: Vec<IndexedCall<'a>>,
+    file_name: &'a str,
 }
 
-struct IndexedCall {
+struct IndexedCall<'a> {
     index: u32,
-    name: String,
+    name: &'a str,
 }
 
 pub fn build_mapping() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let src = manifest.join("src");
 
-    let mut items: Vec<CallVisitorItem> = Vec::new();
-    if let Err(e) = visit_dir(&src, &mut items) {
-        panic!("failed to process source tree: {e}");
-    }
+    let items: Vec<CallVisitorItem> =
+        visit_dir(&src).unwrap_or_else(|e| panic!("failed to process source tree: {e}"));
 
-    // Union the calls of every file into one set.
-    let calls: HashSet<String> = items
+    // The unique calls in sorted order, so the name -> index assignment is stable across builds.
+    let calls: Vec<&str> = items
         .iter()
-        .flat_map(|item| item.calls.iter().cloned())
+        .flat_map(|item| item.calls.iter().map(String::as_str))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
         .collect();
 
-    // Sort so the name -> index assignment is stable across builds.
-    let mut calls: Vec<String> = calls.into_iter().collect();
-    calls.sort();
-
-    // Give every unique call the index of its position in the sorted list.
-    let indices: HashMap<&str, u32> = calls
-        .iter()
-        .enumerate()
-        .map(|(index, call)| (call.as_str(), index as u32))
-        .collect();
-
-    // Rebuild the per-file items, now with each call's index.
+    // Rebuild the per-file items with each call's index: its position in the sorted list.
     let indexed_items: Vec<IndexedCallItem> = items
         .iter()
         .map(|item| {
-            let mut calls: Vec<IndexedCall> = item
+            // Both lists are sorted by name, so these calls come out sorted by index as well.
+            let calls = item
                 .calls
                 .iter()
                 .map(|call| IndexedCall {
-                    index: indices[call.as_str()],
-                    name: call.clone(),
+                    index: calls.binary_search(&call.as_str()).unwrap() as u32,
+                    name: call,
                 })
                 .collect();
-            calls.sort_by_key(|call| call.index);
             IndexedCallItem {
                 calls,
-                file_name: item.file_name.clone(),
+                file_name: &item.file_name,
             }
         })
         .collect();
 
+    // Without calls there is nothing to generate; a program array with 0 entries would fail to
+    // load.
     let mut contents = String::new();
-    build_call_map(&calls, &mut contents);
-    build_call_table(&indexed_items, &mut contents);
-    build_tail_call_macro(&calls, &mut contents);
+    if !calls.is_empty() {
+        build_call_map(&calls, &mut contents);
+        build_call_table(&indexed_items, &mut contents);
+        build_tail_call_macro(&calls, &mut contents);
+    }
 
     let out = PathBuf::from(env::var("OUT_DIR").unwrap()).join("__gladia_tail_calls.rs");
     fs::write(out, contents).unwrap();
 }
 
-fn build_call_map(calls: &[String], contents: &mut String) {
+fn build_call_map(calls: &[&str], contents: &mut String) {
     writeln!(
         contents,
-        "#[aya_ebpf::macros::map(name = \"__gladia_tail_call_map\")]\n"
-    )
-    .unwrap();
-    writeln!(
-        contents,
-        "#[doc(hidden)]\n#[allow(non_upper_case_globals)]\npub static __gladia_tail_call_map: aya_ebpf::maps::ProgramArray = aya_ebpf::maps::ProgramArray::with_max_entries({}, 0);\n\n",
+        "#[aya_ebpf::macros::map(name = \"__gladia_tail_call_map\")]\n\
+         #[doc(hidden)]\n\
+         #[allow(non_upper_case_globals)]\n\
+         pub static __gladia_tail_call_map: aya_ebpf::maps::ProgramArray = \
+         aya_ebpf::maps::ProgramArray::with_max_entries({}, 0);\n",
         calls.len()
     )
     .unwrap();
@@ -96,63 +82,51 @@ fn build_call_map(calls: &[String], contents: &mut String) {
 fn build_call_table(indexed_items: &[IndexedCallItem], contents: &mut String) {
     // One header per source file; the suffix keeps the static names unique.
     for (item_index, item) in indexed_items.iter().enumerate() {
-        writeln!(contents, "#[used]").unwrap();
-        writeln!(contents, "#[doc(hidden)]").unwrap();
-        writeln!(contents, "#[allow(non_upper_case_globals)]").unwrap();
+        let count = item.calls.len();
         writeln!(
             contents,
-            "#[unsafe(link_section = \".gladia_tail_call_section\")]"
+            "#[used]\n\
+             #[doc(hidden)]\n\
+             #[allow(non_upper_case_globals)]\n\
+             #[unsafe(link_section = \".gladia_tail_call_section\")]\n\
+             pub static __gladia_TAIL_CALL_MAP_{item_index}: gladia_ebpf::TestEntryHeader<{count}> = \
+             gladia_ebpf::TestEntryHeader {{\n    \
+                 version: 1u32,\n    \
+                 file_name: {},\n    \
+                 count: {count}u32,\n    \
+                 size: core::mem::size_of::<gladia_ebpf::TestEntryCall>() as u32,\n    \
+                 entries: [",
+            name_literal(item.file_name)
         )
         .unwrap();
-        writeln!(
-            contents,
-            "pub static __gladia_TAIL_CALL_MAP_{item_index}: gladia_ebpf::TestEntryHeader<{}> = gladia_ebpf::TestEntryHeader {{",
-            item.calls.len()
-        )
-        .unwrap();
-        writeln!(contents, "    version: 1u32,").unwrap();
-        writeln!(
-            contents,
-            "    file_name: {},",
-            name_literal(&item.file_name)
-        )
-        .unwrap();
-        writeln!(contents, "    count: {}u32,", item.calls.len()).unwrap();
-        writeln!(
-            contents,
-            "    size: core::mem::size_of::<gladia_ebpf::TestEntryCall>() as u32,"
-        )
-        .unwrap();
-        writeln!(contents, "    entries: [").unwrap();
         for call in &item.calls {
             writeln!(
                 contents,
                 "        gladia_ebpf::TestEntryCall {{ index: {}u32, name: {} }},",
                 call.index,
-                name_literal(&call.name)
+                name_literal(call.name)
             )
             .unwrap();
         }
-        writeln!(contents, "    ],").unwrap();
-        writeln!(contents, "}};\n").unwrap();
+        writeln!(contents, "    ],\n}};\n").unwrap();
     }
 }
 
-fn build_tail_call_macro(calls: &[String], contents: &mut String) {
-    if !calls.is_empty() {
-        // Exported so a binary can use the macro from the library that includes this file.
-        writeln!(contents, "#[allow(unused_macros)]").unwrap();
-        writeln!(contents, "#[macro_export]").unwrap();
-        writeln!(contents, "macro_rules! {TAIL_CALL_MACRO_NAME} {{").unwrap();
-        for (index, call) in calls.iter().enumerate() {
-            writeln!(
+fn build_tail_call_macro(calls: &[&str], contents: &mut String) {
+    // Exported so a binary can use the macro from the library that includes this file.
+    writeln!(
+        contents,
+        "#[allow(unused_macros)]\n#[macro_export]\nmacro_rules! {TAIL_CALL_MACRO_NAME} {{"
+    )
+    .unwrap();
+    for (index, call) in calls.iter().enumerate() {
+        writeln!(
             contents,
             "    ($ctx:expr, {call:?}) => {{ unsafe {{ $crate::__gladia_tail_call_map.tail_call($ctx, {index}u32) }} }};"
         )
         .unwrap();
-        }
-        writeln!(contents, "}}\n").unwrap();
     }
+    writeln!(contents, "}}").unwrap();
 }
 
 /// Formats `name` as a byte string literal padded with zeros to `STRING_SIZE` bytes. The
@@ -165,9 +139,13 @@ fn name_literal(name: &str) -> String {
     );
 
     let mut literal = String::from("*b\"");
-    for &byte in bytes {
-        literal.extend(std::ascii::escape_default(byte).map(char::from));
-    }
+    literal.extend(
+        bytes
+            .iter()
+            .copied()
+            .flat_map(std::ascii::escape_default)
+            .map(char::from),
+    );
     literal.push_str(&"\\0".repeat(STRING_SIZE - bytes.len()));
     literal.push('"');
     literal

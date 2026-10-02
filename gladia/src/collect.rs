@@ -1,60 +1,62 @@
-use std::{collections::HashSet, fs, path::Path};
+use std::{collections::BTreeSet, fs, io, path::Path};
 
 use syn::{Expr, ExprLit, Lit, Macro, Token, punctuated::Punctuated, visit::Visit};
 
 use crate::constants::{RUST_EXTENSION, TAIL_CALL_MACRO_NAME};
 
 pub struct CallVisitorItem {
-    pub calls: HashSet<String>,
+    /// The unique call names, sorted.
+    pub calls: BTreeSet<String>,
+    /// The file's path relative to the directory that was visited, e.g. `tests/arp.rs`.
     pub file_name: String,
 }
 
 /// Collects the `tail_call!` targets of every Rust file under `dir`, one item per file that
-/// contains at least one call.
-pub fn visit_dir(dir: &Path, calls: &mut Vec<CallVisitorItem>) -> std::io::Result<()> {
+/// contains at least one call. The items are sorted by file name.
+pub fn visit_dir(dir: &Path) -> io::Result<Vec<CallVisitorItem>> {
     // Cargo scans a directory recursively, so this also catches files that are added or removed.
     println!("cargo:rerun-if-changed={}", dir.display());
-    walk_dir(dir, calls)
+
+    let mut items = Vec::new();
+    walk_dir(dir, dir, &mut items)?;
+    // The directory walk has no defined order; sort so the generated output is stable.
+    items.sort_by(|a, b| a.file_name.cmp(&b.file_name));
+    Ok(items)
 }
 
-fn walk_dir(dir: &Path, calls: &mut Vec<CallVisitorItem>) -> std::io::Result<()> {
+fn walk_dir(root: &Path, dir: &Path, items: &mut Vec<CallVisitorItem>) -> io::Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
 
         let file_type = entry.file_type()?;
-        let is_dir = if file_type.is_symlink() {
-            path.is_dir()
-        } else {
-            file_type.is_dir()
-        };
+        let is_dir = file_type.is_dir() || (file_type.is_symlink() && path.is_dir());
 
         if is_dir {
-            walk_dir(&path, calls)?;
+            walk_dir(root, &path, items)?;
         } else if path.extension().is_some_and(|x| x == RUST_EXTENSION) {
-            walk_file(&path, calls)?;
+            walk_file(root, &path, items)?;
         }
     }
     Ok(())
 }
 
-fn walk_file(path: &Path, calls: &mut Vec<CallVisitorItem>) -> std::io::Result<()> {
+fn walk_file(root: &Path, path: &Path, items: &mut Vec<CallVisitorItem>) -> io::Result<()> {
     let source = fs::read_to_string(path)?;
     let file = syn::parse_file(&source)
         .unwrap_or_else(|e| panic!("failed to parse {}: {e}", path.display()));
     let mut visitor = CallVisitor {
         path,
-        calls: HashSet::new(),
+        calls: BTreeSet::new(),
     };
     visitor.visit_file(&file);
 
     if !visitor.calls.is_empty() {
-        calls.push(CallVisitorItem {
+        // `path` was found by walking `root`, so it always starts with it.
+        let relative = path.strip_prefix(root).unwrap_or(path);
+        items.push(CallVisitorItem {
             calls: visitor.calls,
-            file_name: path.file_name().map_or_else(
-                || "[unknown]".to_string(),
-                |n| n.to_string_lossy().into_owned(),
-            ),
+            file_name: relative.to_string_lossy().into_owned(),
         });
     }
     Ok(())
@@ -62,7 +64,7 @@ fn walk_file(path: &Path, calls: &mut Vec<CallVisitorItem>) -> std::io::Result<(
 
 struct CallVisitor<'a> {
     path: &'a Path,
-    calls: HashSet<String>,
+    calls: BTreeSet<String>,
 }
 
 impl<'ast> Visit<'ast> for CallVisitor<'_> {
@@ -90,10 +92,10 @@ impl<'ast> Visit<'ast> for CallVisitor<'_> {
                 fail("expected two arguments: `tail_call!(&ctx, \"name\")`");
             }
 
-            match args.get(1) {
-                Some(Expr::Lit(ExprLit {
+            match &args[1] {
+                Expr::Lit(ExprLit {
                     lit: Lit::Str(s), ..
-                })) => self.calls.insert(s.value()),
+                }) => self.calls.insert(s.value()),
                 _ => fail("second argument must be a string literal"),
             };
         }
