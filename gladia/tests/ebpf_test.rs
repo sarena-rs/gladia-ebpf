@@ -44,22 +44,29 @@ fn find_entry_calls(data: &[u8]) -> anyhow::Result<()> {
             let metadata = section.data()?;
             let little_endian = file.is_little_endian();
             let mut reader = Reader::new(metadata, little_endian);
-            let version = reader.read_u32()?;
-            println!("version: {version}");
 
-            let file_name = reader.read_str(STRING_SIZE)?;
-            println!("file_name: {file_name}");
+            // Every source file with tail calls adds its own header, placed back to back.
+            while !reader.is_empty() {
+                let version = reader.read_u32()?;
+                let file_name = reader.read_str(STRING_SIZE)?;
+                println!("file_name: {file_name}");
+                if version != 1 {
+                    eprintln!("{file_name}: unsupported version {version}, expected 1");
+                }
 
-            let size = reader.read_u32()?;
-            println!("size: {size}, ({})", core::mem::size_of::<TestEntryCall>());
+                let size = reader.read_u32()? as usize;
+                let expected_size = core::mem::size_of::<TestEntryCall>();
+                if size != expected_size {
+                    anyhow::bail!("{file_name}: entry size is {size}, expected {expected_size}");
+                }
 
-            let count = reader.read_u32()? as usize;
-            println!("count: {count}");
+                let count = reader.read_u32()? as usize;
 
-            for _ in 0..count {
-                let index = reader.read_u32()?;
-                let name = reader.read_str(STRING_SIZE)?;
-                println!("{index} --> {name}")
+                for _ in 0..count {
+                    let index = reader.read_u32()?;
+                    let name = reader.read_str(STRING_SIZE)?;
+                    println!("{index} --> {name}")
+                }
             }
         }
     }
@@ -79,6 +86,10 @@ impl<'a> Reader<'a> {
             cursor: Cursor::new(data),
             little_endian,
         }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.cursor.position() as usize >= self.cursor.get_ref().len()
     }
 
     fn read_u32(&mut self) -> io::Result<u32> {
