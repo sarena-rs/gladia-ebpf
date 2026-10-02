@@ -67,3 +67,9 @@ fn feature_enabled() -> bool {
 fn check_checksum() -> bool {
     true
 }
+
+fn test(ctx: TcContext) {
+    tail_call!(&ctx, "hello");
+    tail_call!(&ctx, "world");
+    tail_call!(&ctx, "xxx");
+}

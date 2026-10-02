@@ -5,6 +5,7 @@
 use aya_ebpf::programs::TcContext;
 #[cfg(not(test))]
 use ebpf_test_programs::do_panic;
+use ebpf_test_programs::tail_call;
 
 #[cfg(not(test))]
 #[panic_handler]
@@ -15,8 +16,6 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 #[unsafe(link_section = "license")]
 #[unsafe(no_mangle)]
 static LICENSE: [u8; 13] = *b"Dual MIT/GPL\0";
-
-gladia_ebpf::include_generated!();
 
 fn test(ctx: TcContext) {
     tail_call!(&ctx, "hello");
