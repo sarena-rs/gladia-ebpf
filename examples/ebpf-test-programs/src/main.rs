@@ -16,7 +16,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 #[unsafe(no_mangle)]
 static LICENSE: [u8; 13] = *b"Dual MIT/GPL\0";
 
-waggle_ebpf::include_generated!();
+gladia_ebpf::include_generated!();
 
 fn test(ctx: TcContext) {
     tail_call!(&ctx, "hello");
@@ -25,3 +25,7 @@ fn test(ctx: TcContext) {
 
     tail_call!(&ctx, "bladiebla");
 }
+
+// To expand macros:
+// cargo +nightly expand --manifest-path examples/Cargo.toml -p ebpf-test-programs --bin
+// ebpf-test-programs

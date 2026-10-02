@@ -1,13 +1,13 @@
 [workspace]
 members = [
-    "waggle",
-    "waggle-macros",
+    "gladia",
+    "gladia-macros",
 
     # Shared (userspace & eBPF)
-    "waggle-shared",
+    "gladia-shared",
 
     # eBPF framework
-    "waggle-ebpf",
+    "gladia-ebpf",
 
     # Build tooling
     "xtask",
@@ -17,13 +17,13 @@ members = [
 exclude = ["examples"]
 
 default-members = [
-    "waggle",
-    "waggle-macros",
+    "gladia",
+    "gladia-macros",
 
     # Shared (userspace & eBPF)
-    "waggle-shared",
+    "gladia-shared",
 
-    # waggle-ebpf is not included because it only builds for the eBPF target
+    # gladia-ebpf is not included because it only builds for the eBPF target
     # the xtask is also not included because its a build crate
 ]
 
@@ -39,9 +39,9 @@ version = "0.1.0"
 
 [workspace.dependencies]
 # Internal crates. Released in lockstep, so pinned to the exact version: the
-# wire format between waggle and waggle-ebpf must match.
-waggle-macros = { path = "waggle-macros", version = "=0.1.0" }
-waggle-shared = { path = "waggle-shared", version = "=0.1.0", default-features = false }
+# wire format between gladia and gladia-ebpf must match.
+gladia-macros = { path = "gladia-macros", version = "=0.1.0" }
+gladia-shared = { path = "gladia-shared", version = "=0.1.0", default-features = false }
 
 anyhow = { version = "1" }
 async-trait = "0.1.89"

@@ -1,0 +1,95 @@
+use proc_macro2::TokenStream;
+use syn::ItemFn;
+
+use crate::common::{ProgramAttrs, ProgramMode, passthrough_tc, passthrough_xdp};
+
+pub(crate) struct ActProgram {
+    item: ItemFn,
+    mode: ProgramMode,
+    name: String,
+}
+
+pub(crate) fn expand(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    match ActProgram::parse(attrs, item) {
+        Ok(prog) => prog.expand(),
+        Err(err) => err.to_compile_error(),
+    }
+}
+
+impl ActProgram {
+    pub(crate) fn parse(attrs: TokenStream, item: TokenStream) -> syn::Result<Self> {
+        let item: ItemFn = syn::parse2(item)?;
+        let ProgramAttrs { mode, name } = syn::parse2(attrs)?;
+        Ok(Self { item, mode, name })
+    }
+
+    pub(crate) fn expand(&self) -> TokenStream {
+        match self.mode {
+            ProgramMode::Tc => passthrough_tc("act", &self.name, &self.item),
+            ProgramMode::Xdp => passthrough_xdp("act", &self.name, &self.item),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quote::quote;
+    use syn::parse_quote;
+
+    use super::*;
+
+    #[test]
+    fn test_tc_expand() {
+        let prog = ActProgram::parse(
+            parse_quote! { tc, "my_test" },
+            parse_quote! {
+                fn prog(ctx: ::aya_ebpf::programs::TcContext) -> TestStatus {
+                    TestStatus::Pass
+                }
+            },
+        )
+        .unwrap();
+        let expanded = prog.expand();
+        let expected = quote! {
+            #[unsafe(no_mangle)]
+            #[unsafe(link_section = "classifier")]
+            pub fn __test_fw_act_my_test(ctx: *mut ::gladia_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
+                let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
+                let tc_ctx = ::gladia_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
+                prog(tc_ctx) as i32
+            }
+
+            fn prog(ctx: ::aya_ebpf::programs::TcContext) -> TestStatus {
+                TestStatus::Pass
+            }
+        };
+        assert_eq!(expected.to_string(), expanded.to_string());
+    }
+
+    #[test]
+    fn test_xdp_expand_with_order() {
+        let prog = ActProgram::parse(
+            parse_quote! { xdp, "firewall_test" },
+            parse_quote! {
+                fn check(ctx: ::aya_ebpf::programs::XdpContext) -> TestStatus {
+                    TestStatus::Pass
+                }
+            },
+        )
+        .unwrap();
+        assert_eq!(prog.name, "firewall_test");
+        let expanded = prog.expand();
+        let expected = quote! {
+            #[unsafe(no_mangle)]
+            #[unsafe(link_section = "xdp")]
+            pub fn __test_fw_act_firewall_test(ctx: *mut ::gladia_ebpf::__private::aya_ebpf::bindings::xdp_md) -> u32 {
+                check(::gladia_ebpf::__private::aya_ebpf::programs::XdpContext::new(ctx)) as u32
+            }
+
+            fn check(ctx: ::aya_ebpf::programs::XdpContext) -> TestStatus {
+                TestStatus::Pass
+            }
+        };
+        assert_eq!(expected.to_string(), expanded.to_string());
+    }
+}

@@ -1,0 +1,23 @@
+[package]
+name = "gladia-ebpf"
+description = "eBPF-side library for gladia tests: arrange/act/assert program macros, assertions and test logging"
+categories = ["development-tools::testing", "network-programming", "no-std"]
+keywords.workspace = true
+
+edition.workspace = true
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+gladia-shared = { workspace = true }
+gladia-macros = { workspace = true }
+
+aya-ebpf = { workspace = true }
+network-types = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true, default-features = false }

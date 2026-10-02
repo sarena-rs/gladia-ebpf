@@ -10,14 +10,14 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-waggle-ebpf = { path = "../../waggle-ebpf", default-features = false }
+gladia-ebpf = { path = "../../gladia-ebpf", default-features = false }
 
 aya-ebpf = { workspace = true, default-features = false }
 network-types = { workspace = true, default-features = false }
 serde = { workspace = true, default-features = false }
 
 [build-dependencies]
-waggle = { path = "../../waggle" }
+gladia = { path = "../../gladia" }
 which = { workspace = true }
 
 # eBPF programs cannot have tests: the eBPF target has no `test` crate, and

@@ -1,7 +1,7 @@
 #![allow(nonstandard_style, dead_code)]
 
 use aya_ebpf::{macros::map, maps::ProgramArray, programs::TcContext};
-use waggle_ebpf::{
+use gladia_ebpf::{
     FROM_CONTAINER, FROM_HOST, FROM_NETDEV, FROM_OVERLAY, FROM_WIREGUARD, TO_CONTAINER, TO_HOST,
     TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestStatus,
 };

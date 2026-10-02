@@ -1,0 +1,24 @@
+[package]
+name = "gladia-shared"
+description = "Types and wire format shared by gladia and gladia-ebpf. Internal: depend on gladia or gladia-ebpf instead"
+categories = ["development-tools::testing", "no-std"]
+keywords.workspace = true
+
+edition.workspace = true
+license.workspace = true
+readme = "README.md"
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Userspace side: std, plus aya and serde support for the shared types.
+user = ["dep:aya", "dep:serde"]
+
+[dependencies]
+aya = { workspace = true, optional = true }
+hex = { workspace = true }
+serde = { workspace = true, optional = true }

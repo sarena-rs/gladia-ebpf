@@ -1,5 +1,5 @@
 use aya_ebpf::programs::TcContext;
-use waggle_ebpf::{
+use gladia_ebpf::{
     SCAPY_ASSERT_NULL, TestStatus, TestSuite, arrange, assert, assert_buffer, assert_test, status,
     suite::{SCAPY_ASSERT_MAP, SCAPY_ASSERT_MAP_COUNT, memcmp},
     util::PacketBuilder,

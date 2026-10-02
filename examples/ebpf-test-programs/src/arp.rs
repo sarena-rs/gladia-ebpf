@@ -1,7 +1,7 @@
 use core::mem;
 
 use aya_ebpf::programs::TcContext;
-use waggle_ebpf::{
+use gladia_ebpf::{
     TestStatus, TestSuite, act, arrange, assert, assert_test, test_log, test_skip,
     util::PacketBuilder,
 };
