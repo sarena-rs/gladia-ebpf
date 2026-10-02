@@ -2,16 +2,21 @@ use std::{collections::HashSet, env, fmt::Write, fs, path::PathBuf};
 
 use waggle_shared::{TestEntryCall, TestEntryHeader};
 
-use crate::{collect::visit_dir, constants::TAIL_CALL_MACRO_NAME};
+use crate::{
+    collect::{CallVisitorItem, visit_dir},
+    constants::TAIL_CALL_MACRO_NAME,
+};
 
 pub fn build_mapping() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let src = manifest.join("src");
-    let mut calls = HashSet::new();
 
+    let mut calls: Vec<CallVisitorItem> = Vec::new();
     if let Err(e) = visit_dir(&src, &mut calls) {
         panic!("failed to process source tree: {e}");
     }
+
+    let mut calls = HashSet::new();
 
     // Sort so the name -> index assignment is stable across builds.
     let mut calls: Vec<String> = calls.into_iter().collect();
@@ -41,6 +46,7 @@ fn build_call_map(calls: &[String], contents: &mut String) {
 }
 
 fn build_call_table(calls: &[String], contents: &mut String) {
+    writeln!(contents, "#[used]").unwrap();
     writeln!(contents, "#[doc(hidden)]").unwrap();
     writeln!(
         contents,
@@ -49,13 +55,21 @@ fn build_call_table(calls: &[String], contents: &mut String) {
     .unwrap();
     writeln!(
         contents,
-        "pub static __WAGGLE_TAIL_CALL_MAP: &[(&str, u32)] = &[\n"
+        "pub static __WAGGLE_TAIL_CALL_MAP: waggle_ebpf::TestEntryHeader<{}> = waggle_ebpf::TestEntryHeader {{\n",
+        calls.len()
     )
     .unwrap();
-    for (index, call) in calls.iter().enumerate() {
-        writeln!(contents, "    ({call:?}, {index}u32),").unwrap();
-    }
-    writeln!(contents, "];\n\n").unwrap();
+    writeln!(contents, "    version: 1u32,").unwrap();
+    writeln!(contents, "    file_name: make_name(\"some.rs\"),").unwrap();
+    writeln!(contents, "    count: 1u32,").unwrap();
+    writeln!(
+        contents,
+        "    size: core::mem::size_of::<waggle_ebpf::TestEntryCall>() as u32,"
+    )
+    .unwrap();
+    writeln!(contents, "    entries: [],").unwrap();
+
+    writeln!(contents, "}};\n\n").unwrap();
 }
 
 fn build_tail_call_macro(calls: &[String], contents: &mut String) {
@@ -71,31 +85,9 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
     writeln!(contents, "}}\n").unwrap();
 }
 
-//
-//
-//
-
-// let config = Config::new().scan_src().generate_mapping();
-// config.run().unwrap();
-
-// waggle::Builder::new()
-//     .scan("src")
-//     .generate("calls.rs")
-//     .run()
-//     .unwrap();
-
-// Generate:
-//
-// pub mod __generated {
-//   pub static CALLS: &[(&str, u32)] = &[
-//     ("hello", 1"),
-//     ("world", 2"),
-// ];
-// }
-
 // #[used]
 // #[unsafe(link_section = ".test_entry_calls")]
-// static __TEST_ENTRY_CALLS: TestEntryHeader<3> = TestEntryHeader {
+// static __WAGGLE_TAIL_CALL_MAP: TestEntryHeader<3> = TestEntryHeader {
 //     version: 1,
 //     file_name: make_name(b"yyy.rs"),
 //     count: 3u32,
@@ -115,42 +107,6 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
 //         },
 //     ],
 // };
-
-#[used]
-#[unsafe(link_section = ".test_entry_calls")]
-static TEST_ENTRY_CALLS1: TestEntryHeader<3> = TestEntryHeader {
-    version: 1,
-    file_name: make_name(b"main.rs"),
-    count: 3u32,
-    size: core::mem::size_of::<TestEntryCall>() as u32,
-    entries: [
-        TestEntryCall {
-            index: 0u32,
-            name: make_name(b"filter_ipv4"),
-        },
-        TestEntryCall {
-            index: 1u32,
-            name: make_name(b"filter_tcp"),
-        },
-        TestEntryCall {
-            index: 2u32,
-            name: make_name(b"filter_udp"),
-        },
-    ],
-};
-
-#[used]
-#[unsafe(link_section = ".test_entry_calls")]
-static TEST_ENTRY_CALLS2: TestEntryHeader<1> = TestEntryHeader {
-    version: 1,
-    file_name: make_name(b"xxx.rs"),
-    count: 1u32,
-    size: core::mem::size_of::<TestEntryCall>() as u32,
-    entries: [TestEntryCall {
-        index: 9u32,
-        name: make_name(b"blabla"),
-    }],
-};
 
 const fn make_name<const N: usize>(name: &[u8]) -> [u8; N] {
     let mut result = [0u8; N];
