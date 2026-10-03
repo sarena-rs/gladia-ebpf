@@ -1,22 +1,6 @@
 use gladia::{EbpfObject, Res, run_ebpf_test};
-use gladia_shared::{
-    FROM_CONTAINER, FROM_HOST, FROM_NETDEV, FROM_OVERLAY, FROM_WIREGUARD, STRING_SIZE,
-    TO_CONTAINER, TO_HOST, TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestEntryCall,
-};
+use gladia_shared::{STRING_SIZE, TestEntryCall};
 use object::{Object as _, ObjectSection as _};
-
-const ENTRY_CALL_PROGRAMS: &[(u32, &str)] = &[
-    (FROM_CONTAINER, "from_container"),
-    (TO_CONTAINER, "to_container"),
-    (FROM_HOST, "from_host"),
-    (TO_HOST, "to_host"),
-    (FROM_NETDEV, "from_netdev"),
-    (TO_NETDEV, "to_netdev"),
-    (FROM_OVERLAY, "from_overlay"),
-    (TO_OVERLAY, "to_overlay"),
-    (FROM_WIREGUARD, "from_wireguard"),
-    (TO_WIREGUARD, "to_wireguard"),
-];
 
 const PIN_DIR: &str = "/sys/fs/bpf/gladia";
 
@@ -27,17 +11,24 @@ include!("../../target/ebpf-objects/ebpf-test-programs.rs");
 #[test]
 #[ignore = "requires CAP_NET_ADMIN/CAP_SYS_ADMIN and a writable /run/netns"]
 fn ebpf_test_runner() -> Res<()> {
-    find_entry_calls(TEST_PROGRAMS.bytes).expect("");
+    let entry_calls = find_entry_calls(TEST_PROGRAMS.bytes).expect("failed to read entry calls");
+    let entry_call_programs: Vec<(u32, &str)> = entry_calls
+        .iter()
+        .map(|(index, name)| (*index, name.as_str()))
+        .collect();
 
     run_ebpf_test(
         PIN_DIR,
         PROGRAMS.bytes,
         TEST_PROGRAMS.bytes,
-        ENTRY_CALL_PROGRAMS,
+        &entry_call_programs,
     )
 }
 
-fn find_entry_calls(data: &[u8]) -> anyhow::Result<()> {
+/// Reads the `(index, name)` pairs of the tail calls the test programs make, as recorded by the
+/// build script in the `.gladia_tail_call_section` section.
+fn find_entry_calls(data: &[u8]) -> anyhow::Result<Vec<(u32, String)>> {
+    let mut entry_calls = Vec::new();
     let file = object::File::parse(data)?;
     for section in file.sections() {
         if section.name()? == ".gladia_tail_call_section" {
@@ -47,7 +38,7 @@ fn find_entry_calls(data: &[u8]) -> anyhow::Result<()> {
 
             let version = reader.read_u32()?;
             if version != 1 {
-                eprintln!("unsupported version {version}, expected 1");
+                anyhow::bail!("unsupported version {version}, expected 1");
             }
 
             let size = reader.read_u32()? as usize;
@@ -60,11 +51,11 @@ fn find_entry_calls(data: &[u8]) -> anyhow::Result<()> {
             for _ in 0..count {
                 let index = reader.read_u32()?;
                 let name = reader.read_str(STRING_SIZE)?;
-                println!("{index} --> {name}")
+                entry_calls.push((index, name.to_owned()));
             }
         }
     }
-    Ok(())
+    Ok(entry_calls)
 }
 
 use std::io::{self, Cursor, Read};

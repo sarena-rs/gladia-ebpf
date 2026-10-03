@@ -2,7 +2,10 @@ use std::{env, fmt::Write, fs, path::PathBuf};
 
 use gladia_shared::STRING_SIZE;
 
-use crate::{collect::visit_dir, constants::TAIL_CALL_MACRO_NAME};
+use crate::{
+    collect::visit_dir,
+    constants::{TAIL_CALL_MACRO_NAME, TAIL_CALL_MAP_NAME},
+};
 
 pub fn build_mapping() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
@@ -31,10 +34,10 @@ pub fn build_mapping() {
 fn build_call_map(calls: &[String], contents: &mut String) {
     writeln!(
         contents,
-        "#[aya_ebpf::macros::map(name = \"__gladia_tail_call_map\")]\n\
+        "#[aya_ebpf::macros::map(name = \"{TAIL_CALL_MAP_NAME}\")]\n\
          #[doc(hidden)]\n\
          #[allow(non_upper_case_globals)]\n\
-         pub static __gladia_tail_call_map: aya_ebpf::maps::ProgramArray = \
+         pub static {TAIL_CALL_MAP_NAME}: aya_ebpf::maps::ProgramArray = \
          aya_ebpf::maps::ProgramArray::with_max_entries({}, 0);\n",
         calls.len()
     )
@@ -78,7 +81,7 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
     for (index, call) in calls.iter().enumerate() {
         writeln!(
             contents,
-            "    ($ctx:expr, {call:?}) => {{ unsafe {{ $crate::__gladia_tail_call_map.tail_call($ctx, {index}u32) }} }};"
+            "    ($ctx:expr, {call:?}) => {{ unsafe {{ $crate::{TAIL_CALL_MAP_NAME}.tail_call($ctx, {index}u32) }} }};"
         )
         .unwrap();
     }

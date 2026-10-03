@@ -1,90 +1,64 @@
 #![allow(nonstandard_style, dead_code)]
 
-use aya_ebpf::{macros::map, maps::ProgramArray, programs::TcContext};
-use gladia_ebpf::{
-    FROM_CONTAINER, FROM_HOST, FROM_NETDEV, FROM_OVERLAY, FROM_WIREGUARD, TO_CONTAINER, TO_HOST,
-    TO_NETDEV, TO_OVERLAY, TO_WIREGUARD, TestStatus,
-};
-
-#[map(name = "entry_call_map")]
-static entry_call_map: ProgramArray = ProgramArray::with_max_entries(10, 0);
+use aya_ebpf::programs::TcContext;
+use gladia_ebpf::TestStatus;
 
 pub fn container_receive_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, FROM_CONTAINER);
-    }
+    let _ = tail_call!(&ctx, "from_container");
 
     TestStatus::FrameworkError
 }
 
 pub fn container_send_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, TO_CONTAINER);
-    }
+    let _ = tail_call!(&ctx, "to_container");
 
     TestStatus::FrameworkError
 }
 
 pub fn host_receive_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, TO_HOST);
-    }
+    let _ = tail_call!(&ctx, "to_host");
 
     TestStatus::FrameworkError
 }
 
 pub fn host_send_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, FROM_HOST);
-    }
+    let _ = tail_call!(&ctx, "from_host");
 
     TestStatus::FrameworkError
 }
 
 pub fn netdev_receive_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, FROM_NETDEV);
-    }
+    let _ = tail_call!(&ctx, "from_netdev");
 
     TestStatus::FrameworkError
 }
 
 pub fn netdev_send_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, TO_NETDEV);
-    }
+    let _ = tail_call!(&ctx, "to_netdev");
 
     TestStatus::FrameworkError
 }
 
 pub fn overlay_receive_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, FROM_OVERLAY);
-    }
+    let _ = tail_call!(&ctx, "from_overlay");
 
     TestStatus::FrameworkError
 }
 
 pub fn overlay_send_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, TO_OVERLAY);
-    }
+    let _ = tail_call!(&ctx, "to_overlay");
 
     TestStatus::FrameworkError
 }
 
 pub fn wireguard_receive_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, FROM_WIREGUARD);
-    }
+    let _ = tail_call!(&ctx, "from_wireguard");
 
     TestStatus::FrameworkError
 }
 
 pub fn wireguard_send_packet(ctx: TcContext) -> TestStatus {
-    unsafe {
-        entry_call_map.tail_call(&ctx, TO_WIREGUARD);
-    }
+    let _ = tail_call!(&ctx, "to_wireguard");
 
     TestStatus::FrameworkError
 }

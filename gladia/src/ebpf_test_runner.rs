@@ -13,7 +13,7 @@ use aya::{
 use gladia_shared::{ScapyAssert, TEST_RESULT_MAP_SIZE, TestStatus, tlv_reader};
 use regex::Regex;
 
-use crate::{Res, TestRunnerError, report};
+use crate::{Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, report};
 
 const PAGE_SIZE: usize = 4096;
 const CTX_SIZE: usize = 256;
@@ -56,7 +56,7 @@ fn fill_entry_call_map(
     test_bpf: &mut Ebpf,
     call_programs: &[(u32, &str)],
 ) -> Res<()> {
-    let map_name = "entry_call_map";
+    let map_name = TAIL_CALL_MAP_NAME;
     let map = test_bpf
         .map_mut(map_name)
         .ok_or_else(|| TestRunnerError::MapNotFound(map_name.to_owned()))?;
