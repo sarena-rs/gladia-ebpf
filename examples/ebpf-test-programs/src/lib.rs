@@ -7,7 +7,6 @@ gladia_ebpf::include_generated!();
 mod arp;
 mod dummy;
 mod panic;
-mod prod_calls;
 mod scapy_bytes;
 mod scapy_tests;
 

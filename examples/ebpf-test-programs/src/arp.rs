@@ -6,8 +6,6 @@ use gladia_ebpf::{
     util::PacketBuilder,
 };
 
-use crate::prod_calls::netdev_receive_packet;
-
 #[arrange(tc, "l2_announcement_arp_no_entry")]
 pub fn l2_announcement_arp_no_entry_arrange(ctx: TcContext) -> TestStatus {
     build_packet(ctx)
@@ -15,7 +13,7 @@ pub fn l2_announcement_arp_no_entry_arrange(ctx: TcContext) -> TestStatus {
 
 #[act(tc, "l2_announcement_arp_no_entry")]
 pub fn l2_announcement_arp_no_entry_act(ctx: TcContext) -> TestStatus {
-    netdev_receive_packet(ctx)
+    tail_call!(&ctx, "from_netdev")
 }
 
 #[assert(tc, "l2_announcement_arp_no_entry")]

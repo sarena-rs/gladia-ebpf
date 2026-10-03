@@ -73,6 +73,8 @@ fn build_call_table(calls: &[String], contents: &mut String) {
 
 fn build_tail_call_macro(calls: &[String], contents: &mut String) {
     // Exported so a binary can use the macro from the library that includes this file.
+    // A successful tail call never returns, so the macro only evaluates to its value when the
+    // call fails.
     writeln!(
         contents,
         "#[allow(unused_macros)]\n#[macro_export]\nmacro_rules! {TAIL_CALL_MACRO_NAME} {{"
@@ -81,7 +83,10 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
     for (index, call) in calls.iter().enumerate() {
         writeln!(
             contents,
-            "    ($ctx:expr, {call:?}) => {{ unsafe {{ $crate::{TAIL_CALL_MAP_NAME}.tail_call($ctx, {index}u32) }} }};"
+            "    ($ctx:expr, {call:?}) => {{{{ \
+             let _ = unsafe {{ $crate::{TAIL_CALL_MAP_NAME}.tail_call($ctx, {index}u32) }}; \
+             gladia_ebpf::TestStatus::FrameworkError \
+             }}}};"
         )
         .unwrap();
     }
