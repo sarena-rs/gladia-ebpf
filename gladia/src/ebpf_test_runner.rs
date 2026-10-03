@@ -6,19 +6,24 @@ use std::{
 };
 
 use aya::{
-    Ebpf, EbpfLoader, TestRun, TestRunOptions,
+    Ebpf, EbpfLoader, Pod, TestRun, TestRunOptions,
     maps::{Array, MapData, ProgramArray},
     programs::SchedClassifier,
 };
 use gladia_shared::{ScapyAssert, TEST_RESULT_MAP_SIZE, TestStatus, tlv_reader};
-use regex::Regex;
 
-use crate::{Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, report};
+use crate::{
+    Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, reader::find_entry_calls, report,
+};
 
 const PAGE_SIZE: usize = 4096;
 const CTX_SIZE: usize = 256;
 const HEADROOM: usize = 256;
 const TAILROOM: usize = 320;
+
+/// Prefix the `arrange`/`act`/`assert` macros give the programs they generate:
+/// `__test_fw_<kind>_<test name>`.
+const TEST_PROGRAM_PREFIX: &str = "__test_fw_";
 
 #[derive(Default)]
 struct ProgramSet {
@@ -27,17 +32,42 @@ struct ProgramSet {
     assert: Option<String>,
 }
 
-pub fn run_ebpf_test(
-    pin_dir: &str,
-    ebpf_programs: &[u8],
-    ebpf_test_programs: &[u8],
-    call_programs: &[(u32, &str)],
-) -> Res<()> {
+impl ProgramSet {
+    fn names(&self) -> impl Iterator<Item = &str> {
+        [&self.arrange, &self.act, &self.assert]
+            .into_iter()
+            .flatten()
+            .map(String::as_str)
+    }
+}
+
+/// The maps through which the test programs report back.
+struct TestMaps {
+    result: Array<MapData, [u8; TEST_RESULT_MAP_SIZE]>,
+    status_code: Array<MapData, u32>,
+    scapy_assert: Array<MapData, ScapyAssert>,
+    scapy_assert_count: Array<MapData, u32>,
+}
+
+impl TestMaps {
+    fn take(bpf: &mut Ebpf) -> Res<Self> {
+        Ok(Self {
+            result: take_array(bpf, "test_suite_result")?,
+            status_code: take_array(bpf, "test_suite_status_code")?,
+            scapy_assert: take_array(bpf, "scapy_assert_map")?,
+            scapy_assert_count: take_array(bpf, "scapy_assert_map_count")?,
+        })
+    }
+}
+
+pub fn run_ebpf_test(pin_dir: &str, ebpf_programs: &[u8], ebpf_test_programs: &[u8]) -> Res<()> {
     println!("\n");
     println!("\x1b[36m===== RUNNING eBPF TESTS =====\x1b[0m");
     println!("\n");
 
     reset_pin_dir(pin_dir)?;
+
+    let entry_calls = find_entry_calls(ebpf_test_programs)?;
 
     let mut prod_bpf = EbpfLoader::new()
         .default_map_pin_directory(format!("{pin_dir}/prod"))
@@ -46,212 +76,146 @@ pub fn run_ebpf_test(
         .default_map_pin_directory(format!("{pin_dir}/test"))
         .load(ebpf_test_programs)?;
 
-    fill_entry_call_map(&mut prod_bpf, &mut test_bpf, call_programs)?;
+    fill_entry_call_map(&mut prod_bpf, &mut test_bpf, &entry_calls)?;
 
     run_test(&mut test_bpf)
 }
 
+/// Loads every production program the test programs tail call into, and puts it in its slot of
+/// the tail call map.
 fn fill_entry_call_map(
     prod_bpf: &mut Ebpf,
     test_bpf: &mut Ebpf,
-    call_programs: &[(u32, &str)],
+    entry_calls: &[(u32, String)],
 ) -> Res<()> {
-    let map_name = TAIL_CALL_MAP_NAME;
     let map = test_bpf
-        .map_mut(map_name)
-        .ok_or_else(|| TestRunnerError::MapNotFound(map_name.to_owned()))?;
+        .map_mut(TAIL_CALL_MAP_NAME)
+        .ok_or_else(|| TestRunnerError::MapNotFound(TAIL_CALL_MAP_NAME.to_owned()))?;
     let mut program_array = ProgramArray::try_from(map)?;
 
-    for &(slot, name) in call_programs {
+    for (slot, name) in entry_calls {
         load_bpf_program(prod_bpf, name)?;
-        let prog = get_sched_classifier(prod_bpf, name)?;
-        let fd = prog.fd()?;
-        program_array.set(slot, fd, 0)?;
+        let fd = get_sched_classifier(prod_bpf, name)?.fd()?;
+        program_array.set(*slot, fd, 0)?;
     }
     Ok(())
 }
 
 fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
-    let re = Regex::new(r"^__test_fw_(?P<ptype>arrange|act|assert)_(?P<name>.+)$")?;
-
-    // Collect matching program names grouped by test name.
-    // slots: [arrange_prog_name, setup_prog_name, check_prog_name]
+    // Group the test programs by test name.
     let mut groups: BTreeMap<String, ProgramSet> = BTreeMap::new();
     for (prog_name, _) in test_bpf.programs() {
-        if let Some(caps) = re.captures(prog_name) {
-            let test_name = caps["name"].to_owned();
-            let program_set = groups.entry(test_name.clone()).or_default();
+        let Some((kind, test_name)) = prog_name
+            .strip_prefix(TEST_PROGRAM_PREFIX)
+            .and_then(|rest| rest.split_once('_'))
+        else {
+            continue;
+        };
 
-            match &caps["ptype"] {
-                "arrange" => {
-                    assert!(
-                        program_set.arrange.is_none(),
-                        "multiple arrange programs found for '{test_name}'"
-                    );
-                    program_set.arrange = Some(prog_name.to_owned());
-                }
-                "act" => {
-                    assert!(
-                        program_set.act.is_none(),
-                        "multiple act programs found for '{test_name}'"
-                    );
-                    program_set.act = Some(prog_name.to_owned());
-                }
-                "assert" => {
-                    assert!(
-                        program_set.assert.is_none(),
-                        "multiple assert programs found for '{test_name}'"
-                    );
-                    program_set.assert = Some(prog_name.to_owned());
-                }
-                _ => {
-                    unreachable!();
-                }
-            }
-        }
+        let program_set = groups.entry(test_name.to_owned()).or_default();
+        let slot = match kind {
+            "arrange" => &mut program_set.arrange,
+            "act" => &mut program_set.act,
+            "assert" => &mut program_set.assert,
+            _ => continue,
+        };
+        assert!(
+            slot.is_none(),
+            "multiple {kind} programs found for '{test_name}'"
+        );
+        *slot = Some(prog_name.to_owned());
     }
 
-    // Validate: every test must have a check program.
+    // Every test must have an assert program; load all of them.
     for (test_name, program_set) in &groups {
         if program_set.assert.is_none() {
             return Err(TestRunnerError::MissingCheck(test_name.clone()));
         }
-    }
-
-    // Load all matched programs.
-    for program_set in groups.values() {
-        if let Some(name) = &program_set.arrange {
-            load_bpf_program(test_bpf, name)?;
-        }
-        if let Some(name) = &program_set.act {
-            load_bpf_program(test_bpf, name)?;
-        }
-        if let Some(name) = &program_set.assert {
+        for name in program_set.names() {
             load_bpf_program(test_bpf, name)?;
         }
     }
 
-    let map_name = "test_suite_result";
-    let map = test_bpf
-        .take_map(map_name)
-        .ok_or_else(|| TestRunnerError::MapNotFound(map_name.to_owned()))?;
-    let mut test_suite_result: Array<_, [u8; 8192]> = Array::try_from(map)?;
+    let mut maps = TestMaps::take(test_bpf)?;
 
-    let map_name = "test_suite_status_code";
-    let map = test_bpf
-        .take_map(map_name)
-        .ok_or_else(|| TestRunnerError::MapNotFound(map_name.to_owned()))?;
-    let mut test_suite_status_code: Array<_, u32> = Array::try_from(map)?;
-    test_suite_status_code.set(0, &0, 0)?;
-
-    let map_name = "scapy_assert_map";
-    let map = test_bpf
-        .take_map(map_name)
-        .ok_or_else(|| TestRunnerError::MapNotFound(map_name.to_owned()))?;
-    let mut scapy_assert_map: Array<_, ScapyAssert> = Array::try_from(map)?;
-
-    let map_name = "scapy_assert_map_count";
-    let map = test_bpf
-        .take_map(map_name)
-        .ok_or_else(|| TestRunnerError::MapNotFound(map_name.to_owned()))?;
-    let mut scapy_assert_map_count: Array<_, u32> = Array::try_from(map)?;
-
-    // Build and run each TestCase.
     for (test_name, program_set) in &groups {
-        let arrange_prog = program_set
-            .arrange
-            .as_deref()
-            .map(|n| get_sched_classifier(test_bpf, n))
-            .transpose()?;
-        let act_prog = program_set
-            .act
-            .as_deref()
-            .map(|n| get_sched_classifier(test_bpf, n))
-            .transpose()?;
-        let assert_prog = get_sched_classifier(test_bpf, program_set.assert.as_deref().unwrap())?;
-        sub_test(
-            test_name.as_str(),
-            &mut scapy_assert_map,
-            &mut scapy_assert_map_count,
-            &mut test_suite_result,
-            &mut test_suite_status_code,
-            arrange_prog,
-            act_prog,
-            assert_prog,
-        )?;
+        let get = |name: &Option<String>| {
+            name.as_deref()
+                .map(|n| get_sched_classifier(test_bpf, n))
+                .transpose()
+        };
+        let arrange_prog = get(&program_set.arrange)?;
+        let act_prog = get(&program_set.act)?;
+        // Checked above: every test has an assert program.
+        let assert_prog = get(&program_set.assert)?.unwrap();
+        sub_test(test_name, &mut maps, arrange_prog, act_prog, assert_prog)?;
     }
 
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
 fn sub_test(
     name: &str,
-    scapy_assert_map: &mut Array<MapData, ScapyAssert>,
-    scapy_assert_map_count: &mut Array<MapData, u32>,
-    test_suite_result: &mut Array<MapData, [u8; TEST_RESULT_MAP_SIZE]>,
-    test_suite_status_code: &mut Array<MapData, u32>,
+    maps: &mut TestMaps,
     arrange_prog: Option<&SchedClassifier>,
     act_prog: Option<&SchedClassifier>,
     assert_prog: &SchedClassifier,
 ) -> Res<()> {
-    let data = vec![0u8; PAGE_SIZE - HEADROOM - TAILROOM];
-    let ctx = vec![0u8; CTX_SIZE];
+    let mut data = vec![0u8; PAGE_SIZE - HEADROOM - TAILROOM];
+    let mut ctx = vec![0u8; CTX_SIZE];
 
-    // Clear test_suite_result
-    test_suite_result.set(0, &[0u8; TEST_RESULT_MAP_SIZE], 0)?;
+    // Clear the results of the previous test.
+    maps.result.set(0, &[0u8; TEST_RESULT_MAP_SIZE], 0)?;
+    maps.scapy_assert_count.set(0, &0, 0)?;
+    maps.status_code.set(0, &0, 0)?;
 
-    // Clear assert map
-    scapy_assert_map_count.set(0, &0u32, 0)?;
-    test_suite_status_code.set(0, &0u32, 0)?;
-
-    let (data, ctx) = if let Some(arrange_prog) = arrange_prog {
-        let (ret, data, ctx) = run_bpf_program(arrange_prog, &data, &ctx)?;
+    if let Some(arrange_prog) = arrange_prog {
+        let ret;
+        (ret, data, ctx) = run_bpf_program(arrange_prog, &data, &ctx)?;
         assert!(
             !test_error(ret),
             "[{name}] error while running arrange prog: status code ({ret})"
         );
-        (data, ctx)
-    } else {
-        (data, ctx)
-    };
+    }
 
-    let (data, ctx) = if let Some(act_prog) = act_prog {
-        let (ret, data, ctx) = run_bpf_program(act_prog, &data, &ctx)?;
+    if let Some(act_prog) = act_prog {
+        let ret;
+        (ret, data, ctx) = run_bpf_program(act_prog, &data, &ctx)?;
         assert!(
             !test_error(ret),
             "[{name}] error while running act prog: status code ({ret})"
         );
-        test_suite_status_code.set(0, &ret, 0)?;
+        maps.status_code.set(0, &ret, 0)?;
+    }
 
-        (data, ctx)
-    } else {
-        (data, ctx)
-    };
+    run_bpf_program(assert_prog, &data, &ctx)?;
 
-    let (_, _, _) = run_bpf_program(assert_prog, &data, &ctx)?;
-
-    let raw = test_suite_result.get(&0, 0)?;
+    let raw = maps.result.get(&0, 0)?;
 
     // Trim trailing zeroes — the eBPF side does not store a length
     // separately. A second map entry for the length would be cleaner
     // but this is sufficient for a fixed test buffer.
     let written = raw.iter().rposition(|&b| b != 0).map_or(0, |p| p + 1);
-
-    let raw = raw[..written].to_vec();
-    if raw.is_empty() {
+    if written == 0 {
         return Err(TestRunnerError::NoResult);
     }
 
-    let result = tlv_reader::parse_test(&raw)?;
+    let result = tlv_reader::parse_test(&raw[..written])?;
 
     report::print_test_result(&result);
 
-    process_asserts(name, scapy_assert_map, scapy_assert_map_count)?;
+    process_asserts(name, &maps.scapy_assert, &maps.scapy_assert_count)?;
 
     assert!(result.status != TestStatus::Fail, "Test failed.");
 
     Ok(())
+}
+
+fn take_array<V: Pod>(bpf: &mut Ebpf, name: &str) -> Res<Array<MapData, V>> {
+    let map = bpf
+        .take_map(name)
+        .ok_or_else(|| TestRunnerError::MapNotFound(name.to_owned()))?;
+    Ok(Array::try_from(map)?)
 }
 
 fn load_bpf_program(bpf: &mut Ebpf, name: &str) -> Res<()> {
@@ -303,8 +267,8 @@ const SCAPYENV_BIN: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../scapyenv/bin
 
 fn process_asserts(
     name: &str,
-    scapy_assert_map: &mut Array<MapData, ScapyAssert>,
-    scapy_assert_map_count: &mut Array<MapData, u32>,
+    scapy_assert_map: &Array<MapData, ScapyAssert>,
+    scapy_assert_map_count: &Array<MapData, u32>,
 ) -> Res<()> {
     let count = scapy_assert_map_count.get(&0, 0)?;
     if count == 0 {

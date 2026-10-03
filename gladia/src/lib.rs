@@ -7,6 +7,7 @@ mod builder;
 mod collect;
 mod constants;
 mod ebpf_test_runner;
+mod reader;
 mod report;
 
 pub use builder::build_mapping;
@@ -41,8 +42,14 @@ pub enum TestRunnerError {
     #[error("Map {0} not found")]
     MapNotFound(String),
 
-    #[error("Regex error: {0}")]
-    RegexError(#[from] regex::Error),
+    #[error("Object file error: {0}")]
+    ObjectError(#[from] object::Error),
+
+    #[error("Unsupported tail call table version {0}, expected 1")]
+    UnsupportedVersion(u32),
+
+    #[error("Tail call table entry size is {size}, expected {expected}")]
+    EntrySizeMismatch { size: usize, expected: usize },
 
     #[error("Test '{0}' has no assert program")]
     MissingCheck(String),

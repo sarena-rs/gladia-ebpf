@@ -17,11 +17,8 @@ workspace = true
 gladia-shared = { workspace = true, features = ["user"] }
 
 aya = { workspace = true }
-regex = { workspace = true }
+object = { workspace = true }
 serde_json = { workspace = true }
-syn = { version = "3", features = ["full", "visit"] }
+syn = { workspace = true }
 thiserror = { workspace = true, features = ["std"] }
 
-[dev-dependencies]
-anyhow = { workspace = true }
-object = "0.37"
