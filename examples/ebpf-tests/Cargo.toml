@@ -1,0 +1,19 @@
+[package]
+name = "ebpf-tests"
+description = "Runs the example eBPF tests in ebpf-test-programs against ebpf-programs"
+publish = false
+
+# A host crate: part of the root workspace, not of the examples workspace (which builds everything
+# for the eBPF target).
+workspace = "../.."
+
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+aya = { workspace = true }
+gladia = { path = "../../gladia" }

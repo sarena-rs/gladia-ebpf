@@ -26,7 +26,7 @@ clippy: build-ebpf
 # Run all tests except the eBPF test runner (requires root)
 test: build-ebpf
     cargo test --workspace \
-        --exclude gladia \
+        --exclude ebpf-tests \
         -- --no-capture
 
 # Build eBPF programs
@@ -37,7 +37,7 @@ build-ebpf:
 ebpf-test: build-ebpf 
     #!/usr/bin/env bash
     set -euo pipefail
-    exe=$(cargo test --no-run -p gladia --test ebpf_test --message-format=json \
+    exe=$(cargo test --no-run -p ebpf-tests --test ebpf_test --message-format=json \
         | jq -r 'select(.profile.test == true) | .executable')
     sudo "$exe" --ignored --no-capture
 

@@ -11,10 +11,13 @@ members = [
 
     # Build tooling
     "xtask",
+
+    # Host crate that runs the example eBPF tests
+    "examples/ebpf-tests",
 ]
 
 # The example eBPF programs form their own workspace (see examples/Cargo.toml).
-exclude = ["examples"]
+exclude = ["examples/ebpf-programs", "examples/ebpf-test-programs"]
 
 default-members = [
     "gladia",

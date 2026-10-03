@@ -4,6 +4,8 @@
 # Built with `just build-ebpf`, which targets this workspace via xtask.
 [workspace]
 members = ["ebpf-programs", "ebpf-test-programs"]
+# A host crate, part of the root workspace.
+exclude = ["ebpf-tests"]
 
 resolver = "2"
 

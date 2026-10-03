@@ -13,7 +13,8 @@ use aya::{
 use gladia_shared::{ScapyAssert, TEST_RESULT_MAP_SIZE, TestStatus, tlv_reader};
 
 use crate::{
-    Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, reader::find_entry_calls, report,
+    EbpfObject, Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, reader::find_entry_calls,
+    report,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -60,7 +61,24 @@ impl TestMaps {
     }
 }
 
-pub fn run_ebpf_test(pin_dir: &str, ebpf_programs: &[u8], ebpf_test_programs: &[u8]) -> Res<()> {
+/// Where the maps of the loaded programs are pinned, unless another directory is given.
+pub const DEFAULT_PIN_DIR: &str = "/sys/fs/bpf/gladia";
+
+/// Runs every test in `test_programs` against the production `programs`, pinning maps under
+/// [`DEFAULT_PIN_DIR`].
+pub fn run_ebpf_test(programs: &EbpfObject, test_programs: &EbpfObject) -> Res<()> {
+    run_ebpf_test_with_pin_dir(DEFAULT_PIN_DIR, programs, test_programs)
+}
+
+/// Like [`run_ebpf_test`], but pins maps under `pin_dir`. The directory is emptied first.
+pub fn run_ebpf_test_with_pin_dir(
+    pin_dir: &str,
+    programs: &EbpfObject,
+    test_programs: &EbpfObject,
+) -> Res<()> {
+    let ebpf_programs = programs.bytes;
+    let ebpf_test_programs = test_programs.bytes;
+
     println!("\n");
     println!("\x1b[36m===== RUNNING eBPF TESTS =====\x1b[0m");
     println!("\n");
