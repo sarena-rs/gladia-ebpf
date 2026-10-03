@@ -18,14 +18,14 @@ pub fn build_mapping() {
         .into_iter()
         .collect();
 
-    // Without calls there is nothing to generate; a program array with 0 entries would fail to
-    // load.
+    // Without calls there is no map or table; a program array with 0 entries would fail to load.
+    // The macro is always generated, so an unknown call gets a clear error from its catch-all arm.
     let mut contents = String::new();
     if !calls.is_empty() {
         build_call_map(&calls, &mut contents);
         build_call_table(&calls, &mut contents);
-        build_tail_call_macro(&calls, &mut contents);
     }
+    build_tail_call_macro(&calls, &mut contents);
 
     let out = PathBuf::from(env::var("OUT_DIR").unwrap()).join("__gladia_tail_calls.rs");
     fs::write(out, contents).unwrap();
@@ -90,6 +90,17 @@ fn build_tail_call_macro(calls: &[String], contents: &mut String) {
         )
         .unwrap();
     }
+    // Cargo reruns the build script whenever a source file changes, so every call that is used has
+    // an arm above. This arm only matches where that output is stale, as in an editor that has not
+    // rerun the build script yet. It still evaluates to a `TestStatus` to avoid a type error there.
+    writeln!(
+        contents,
+        "    ($ctx:expr, $name:literal) => {{{{ \
+         compile_error!(concat!(\"unknown tail call `\", $name, \"`; rebuild so the build script picks it up\")); \
+         gladia_ebpf::TestStatus::FrameworkError \
+         }}}};"
+    )
+    .unwrap();
     writeln!(contents, "}}").unwrap();
 }
 
