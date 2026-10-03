@@ -6,12 +6,12 @@ use gladia_shared::tlv_reader::ParseError;
 mod builder;
 mod collect;
 mod constants;
-mod ebpf_test_runner;
+mod test_runner;
 mod reader;
 mod report;
 
 pub use builder::build_mapping;
-pub use ebpf_test_runner::run_ebpf_test;
+pub use test_runner::run_ebpf_test;
 
 /// A compiled eBPF ELF object embedded in the binary.
 #[derive(Debug, Clone, Copy)]
