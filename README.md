@@ -1,6 +1,10 @@
-# gladia: an eBPF test framework
+# Gladia eBPF: an eBPF test framework (TCX/XDP)
 
-gladia is a framework for testing eBPF programs written in Rust with [Aya](https://aya-rs.dev),
+[![ci](https://github.com/erwin-kok/sarena/actions/workflows/ci.yaml/badge.svg)](https://github.com/erwin-kok/sarena/actions/workflows/ci.yaml)
+[![made-with-rust](https://img.shields.io/badge/Made%20with-Rust-1f425f.svg)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/github/license/erwin-kok/sarena.svg)](https://github.com/erwin-kok/sarena/blob/master/LICENSE-APACHE)
+
+Gladia is a framework for testing eBPF programs 🐝 written in Rust 🦀 with [Aya](https://aya-rs.dev),
 where they actually run: as BPF bytecode, in the kernel, after passing the verifier.
 
 > **Status: work in progress.** The framework is usable, but young. The API, the generated code
