@@ -5,7 +5,7 @@ where they actually run: as BPF bytecode, in the kernel, after passing the verif
 
 > **Status: work in progress.** The framework is usable, but young. The API, the generated code
 > and the wire format between the eBPF side and userspace will still change, and some parts are
-> tied to the layout of this repository. See [Limitations](#limitations).
+> tied to the layout of this repository. See [Limitations and future work](#limitations-and-future-work).
 
 ## Introduction
 
@@ -152,6 +152,13 @@ handful of integer arguments. The formatting happens in userspace.
 Supported specifiers are those of `bpf_trace_printk`: `%d`, `%u`, `%ld`, `%lu`, `%lld`, `%llu`,
 `%x`, `%lx`, `%llx` and `%p`.
 
+### Building packets
+
+`util::PacketBuilder` writes the test packet into the context in an `arrange` program. For now it
+copies prepared bytes into the packet (`push_data`), for example a packet captured or generated
+with scapy. Building packets layer by layer is planned; see
+[Limitations and future work](#limitations-and-future-work).
+
 ### Packet assertions
 
 When `assert_buffer!` finds a mismatch, the runner passes both packets to
@@ -253,7 +260,9 @@ just test         # run the regular tests
 just ebpf-test    # build, then run the eBPF tests as root (asks for your sudo password)
 ```
 
-## Limitations
+## Limitations and future work
+
+### Limitations
 
 - **Work in progress**: APIs, generated code and the wire format will change.
 - **TC only in the runner**: the macros accept `tc` and `xdp`, but the runner currently loads and
@@ -267,6 +276,18 @@ just ebpf-test    # build, then run the eBPF tests as root (asks for your sudo p
 - **Repository layout**: the path to the scapy script and its Python environment is currently
   resolved relative to this repository.
 - **Privileges**: running the tests requires root or the equivalent capabilities.
+
+### Future work
+
+- **Packet builder**: build packets in an `arrange` program layer by layer (Ethernet, VLAN, IPv4,
+  IPv6 and its extension headers, ARP, TCP, UDP, ICMP, tunnels such as VXLAN and GENEVE, ...)
+  instead of from prepared bytes. The groundwork is in `gladia-ebpf/src/util/pktbld.rs`.
+- **Packet verifier**: build the expected packet in an `assert` program the same way, compare it
+  with the actual result, and show where they differ, field by field. This brings what scapy
+  provides now into the framework itself, without the Python dependency.
+- **XDP** support in the runner.
+- **Configurable paths** for the scapy script and its environment, independent of this
+  repository.
 
 ## License
 

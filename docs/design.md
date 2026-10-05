@@ -306,6 +306,10 @@ After the test, the runner serializes the recorded comparisons to JSON and pipes
 `scapy/trace_diff_pkts.py` (derived from Cilium), which decodes both packets with scapy and prints
 a field-by-field diff. The script runs with the Python environment in `scapyenv/`.
 
+This depends on Python and on the layout of this repository, and the expected packet has to be
+prepared as bytes up front. The planned packet builder and verifier (see
+[Limitations and future work](#limitations-and-future-work)) are meant to replace it.
+
 ## Building the eBPF objects
 
 gladia does not build eBPF objects. The runner takes them as byte slices, and the user decides how
@@ -344,6 +348,8 @@ users.
 
 ## Limitations and future work
 
+### Limitations
+
 - **TC only.** The macros accept `tc` and `xdp`, but the runner loads and runs `SchedClassifier`
   programs only. XDP support in the runner is still to be done.
 - **One Rust test.** All eBPF tests run inside a single `#[test]`; the runner's own output reports
@@ -357,3 +363,20 @@ users.
   crates are published.
 - **Root required.** Loading programs and `BPF_PROG_TEST_RUN` require root or the equivalent
   capabilities.
+
+### Future work
+
+- **Packet builder.** `gladia-ebpf/src/util/pktbld.rs` is the start of a packet builder for
+  `arrange` programs. It already tracks the layers of a packet (`PktLayer`, with an offset per
+  layer, up to seven layers: three outer headers, a tunnel header and three inner headers), but so
+  far only copies prepared bytes into the packet. The goal is to build packets layer by layer
+  (Ethernet, 802.1Q, IPv4, IPv6 with its extension headers, ARP, TCP, UDP, ICMP, ICMPv6, SCTP,
+  VXLAN, GENEVE, ...), filling in lengths and checksums, so tests describe their input instead of
+  embedding byte arrays generated elsewhere.
+- **Packet verifier.** The counterpart for `assert` programs: build the expected packet with the
+  same builder, compare it with the packet the program under test produced, and report the
+  differences per layer and field. This brings what the scapy integration offers into the
+  framework itself, in Rust, without Python and without preparing expected packets up front. The
+  differences could travel back to userspace in the result record, like log entries.
+- **XDP in the runner**, next to TC.
+- **Configurable scapy paths**, as long as the scapy integration remains.
