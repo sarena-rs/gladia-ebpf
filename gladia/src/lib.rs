@@ -13,18 +13,6 @@ mod test_runner;
 pub use builder::build_mapping;
 pub use test_runner::{DEFAULT_PIN_DIR, run_ebpf_test, run_ebpf_test_with_pin_dir};
 
-/// A compiled eBPF ELF object embedded in the binary.
-#[derive(Debug, Clone, Copy)]
-pub struct EbpfObject {
-    /// Name of the eBPF package the object was built from.
-    pub name: &'static str,
-    /// The ELF bytes, aligned (via `aya::include_bytes_aligned!`) so they can
-    /// be parsed in place.
-    pub bytes: &'static [u8],
-    /// Hex-encoded SHA-256 of `bytes`, for identifying the embedded build.
-    pub sha256: &'static str,
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum TestRunnerError {
     #[error("eBPF program error: {0}")]

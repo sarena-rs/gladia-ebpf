@@ -31,8 +31,8 @@ test: build-ebpf
 
 # Build eBPF programs
 build-ebpf:
-    cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-programs --const PROGRAMS -o target/ebpf-objects/ebpf-programs.rs
-    cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-test-programs --const TEST_PROGRAMS -o target/ebpf-objects/ebpf-test-programs.rs
+    cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-programs -o target/ebpf-objects/ebpf-programs.o
+    cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-test-programs -o target/ebpf-objects/ebpf-test-programs.o
 
 ebpf-test: build-ebpf 
     #!/usr/bin/env bash

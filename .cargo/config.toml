@@ -1,3 +1,8 @@
+# Where `just build-ebpf` writes the eBPF objects (`-o` in the justfile), and where the
+# example tests embed them from. Relative to the repository root.
+[env]
+EBPF_OBJECTS = { value = "target/ebpf-objects", relative = true }
+
 [target.bpfel-unknown-none]
 rustflags = ["-C", "target-cpu=v3", "-C", "link-arg=--btf"]
 

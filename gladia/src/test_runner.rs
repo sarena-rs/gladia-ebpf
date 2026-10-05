@@ -13,8 +13,7 @@ use aya::{
 use gladia_shared::{ScapyAssert, TEST_RESULT_MAP_SIZE, TestStatus, tlv_reader};
 
 use crate::{
-    EbpfObject, Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, reader::find_entry_calls,
-    report,
+    Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, reader::find_entry_calls, report,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -64,35 +63,32 @@ impl TestMaps {
 /// Where the maps of the loaded programs are pinned, unless another directory is given.
 pub const DEFAULT_PIN_DIR: &str = "/sys/fs/bpf/gladia";
 
-/// Runs every test in `test_programs` against the production `programs`, pinning maps under
-/// [`DEFAULT_PIN_DIR`].
-pub fn run_ebpf_test(programs: &EbpfObject, test_programs: &EbpfObject) -> Res<()> {
+/// Runs every test in the `test_programs` eBPF object against the production `programs` object,
+/// pinning maps under [`DEFAULT_PIN_DIR`].
+///
+/// Both are the bytes of compiled ELF objects. How they are built is up to the caller (aya-build,
+/// a custom xtask, ...). Embed them with `aya::include_bytes_aligned!` so they can be parsed in
+/// place.
+pub fn run_ebpf_test(programs: &[u8], test_programs: &[u8]) -> Res<()> {
     run_ebpf_test_with_pin_dir(DEFAULT_PIN_DIR, programs, test_programs)
 }
 
 /// Like [`run_ebpf_test`], but pins maps under `pin_dir`. The directory is emptied first.
-pub fn run_ebpf_test_with_pin_dir(
-    pin_dir: &str,
-    programs: &EbpfObject,
-    test_programs: &EbpfObject,
-) -> Res<()> {
-    let ebpf_programs = programs.bytes;
-    let ebpf_test_programs = test_programs.bytes;
-
+pub fn run_ebpf_test_with_pin_dir(pin_dir: &str, programs: &[u8], test_programs: &[u8]) -> Res<()> {
     println!("\n");
     println!("\x1b[36m===== RUNNING eBPF TESTS =====\x1b[0m");
     println!("\n");
 
     reset_pin_dir(pin_dir)?;
 
-    let entry_calls = find_entry_calls(ebpf_test_programs)?;
+    let entry_calls = find_entry_calls(test_programs)?;
 
     let mut prod_bpf = EbpfLoader::new()
         .default_map_pin_directory(format!("{pin_dir}/prod"))
-        .load(ebpf_programs)?;
+        .load(programs)?;
     let mut test_bpf = EbpfLoader::new()
         .default_map_pin_directory(format!("{pin_dir}/test"))
-        .load(ebpf_test_programs)?;
+        .load(test_programs)?;
 
     fill_entry_call_map(&mut prod_bpf, &mut test_bpf, &entry_calls)?;
 
