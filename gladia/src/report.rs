@@ -16,7 +16,6 @@ pub fn print_test_result(test: &TestResult) {
         }
         TestStatus::FrameworkError => {
             println!("\x1b[35m[FRAMEWORK ERROR]\x1b[0m {}", test.name);
-            panic!("Unexpected error occurred in test framework");
         }
     }
     for entry in &test.logs {

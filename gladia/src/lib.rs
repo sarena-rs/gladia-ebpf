@@ -45,6 +45,18 @@ pub enum TestRunnerError {
     #[error("Test has no result")]
     NoResult,
 
+    #[error("Multiple {kind} programs found for test '{test}'")]
+    DuplicateProgram { kind: String, test: String },
+
+    #[error("{0}")]
+    TestFailed(String),
+
+    #[error("Error while tracing diff packets: exited with {0}")]
+    TraceDiff(std::process::ExitStatus),
+
+    #[error("{failed} of {total} eBPF tests failed")]
+    TestsFailed { failed: usize, total: usize },
+
     #[error("Parse failed: {0}")]
     ParseError(#[from] ParseError),
 

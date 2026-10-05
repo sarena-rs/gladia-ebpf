@@ -133,10 +133,12 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
             "assert" => &mut program_set.assert,
             _ => continue,
         };
-        assert!(
-            slot.is_none(),
-            "multiple {kind} programs found for '{test_name}'"
-        );
+        if slot.is_some() {
+            return Err(TestRunnerError::DuplicateProgram {
+                kind: kind.to_owned(),
+                test: test_name.to_owned(),
+            });
+        }
         *slot = Some(prog_name.to_owned());
     }
 
@@ -152,6 +154,8 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
 
     let mut maps = TestMaps::take(test_bpf)?;
 
+    // Run every test, also after a failure, and report them all at the end.
+    let mut summary = Summary::default();
     for (test_name, program_set) in &groups {
         let get = |name: &Option<String>| {
             name.as_deref()
@@ -162,10 +166,77 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
         let act_prog = get(&program_set.act)?;
         // Checked above: every test has an assert program.
         let assert_prog = get(&program_set.assert)?.unwrap();
-        sub_test(test_name, &mut maps, arrange_prog, act_prog, assert_prog)?;
+
+        let outcome = sub_test(test_name, &mut maps, arrange_prog, act_prog, assert_prog);
+        if let Err(e) = &outcome {
+            println!("\x1b[31m[ERROR]\x1b[0m {test_name}: {e}\n");
+        }
+        summary.record(test_name, outcome);
     }
 
-    Ok(())
+    summary.print();
+    summary.into_result()
+}
+
+/// The outcome of all tests in a run.
+#[derive(Default)]
+struct Summary {
+    passed: usize,
+    skipped: usize,
+    /// The failed tests, each with the reason.
+    failed: Vec<(String, String)>,
+}
+
+impl Summary {
+    fn record(&mut self, test_name: &str, outcome: Res<TestStatus>) {
+        let reason = match outcome {
+            Ok(TestStatus::Pass) => {
+                self.passed += 1;
+                return;
+            }
+            Ok(TestStatus::Skip) => {
+                self.skipped += 1;
+                return;
+            }
+            Ok(TestStatus::Fail) => "test failed".to_owned(),
+            Ok(TestStatus::FrameworkError) => "framework error".to_owned(),
+            Err(e) => e.to_string(),
+        };
+        self.failed.push((test_name.to_owned(), reason));
+    }
+
+    fn total(&self) -> usize {
+        self.passed + self.skipped + self.failed.len()
+    }
+
+    fn print(&self) {
+        println!("\x1b[36m===== eBPF TEST SUMMARY =====\x1b[0m");
+        println!(
+            "{} tests: {} passed, {} failed, {} skipped",
+            self.total(),
+            self.passed,
+            self.failed.len(),
+            self.skipped
+        );
+        if !self.failed.is_empty() {
+            println!("\nFailed:");
+            for (test_name, reason) in &self.failed {
+                println!("    \x1b[31m{test_name}\x1b[0m: {reason}");
+            }
+        }
+        println!();
+    }
+
+    fn into_result(self) -> Res<()> {
+        if self.failed.is_empty() {
+            Ok(())
+        } else {
+            Err(TestRunnerError::TestsFailed {
+                failed: self.failed.len(),
+                total: self.total(),
+            })
+        }
+    }
 }
 
 fn sub_test(
@@ -174,7 +245,7 @@ fn sub_test(
     arrange_prog: Option<&SchedClassifier>,
     act_prog: Option<&SchedClassifier>,
     assert_prog: &SchedClassifier,
-) -> Res<()> {
+) -> Res<TestStatus> {
     let mut data = vec![0u8; PAGE_SIZE - HEADROOM - TAILROOM];
     let mut ctx = vec![0u8; CTX_SIZE];
 
@@ -186,19 +257,21 @@ fn sub_test(
     if let Some(arrange_prog) = arrange_prog {
         let ret;
         (ret, data, ctx) = run_bpf_program(arrange_prog, &data, &ctx)?;
-        assert!(
-            !test_error(ret),
-            "[{name}] error while running arrange prog: status code ({ret})"
-        );
+        if test_error(ret) {
+            return Err(TestRunnerError::TestFailed(format!(
+                "error while running arrange prog: status code ({ret})"
+            )));
+        }
     }
 
     if let Some(act_prog) = act_prog {
         let ret;
         (ret, data, ctx) = run_bpf_program(act_prog, &data, &ctx)?;
-        assert!(
-            !test_error(ret),
-            "[{name}] error while running act prog: status code ({ret})"
-        );
+        if test_error(ret) {
+            return Err(TestRunnerError::TestFailed(format!(
+                "error while running act prog: status code ({ret})"
+            )));
+        }
         maps.status_code.set(0, &ret, 0)?;
     }
 
@@ -220,9 +293,7 @@ fn sub_test(
 
     process_asserts(name, &maps.scapy_assert, &maps.scapy_assert_count)?;
 
-    assert!(result.status != TestStatus::Fail, "Test failed.");
-
-    Ok(())
+    Ok(result.status)
 }
 
 fn take_array<V: Pod>(bpf: &mut Ebpf, name: &str) -> Res<Array<MapData, V>> {
@@ -316,11 +387,9 @@ fn process_asserts(
         .write_all(&json_bytes)?;
 
     let output = child.wait_with_output()?;
-    assert!(
-        output.status.success(),
-        "error while tracing diff pkts: exited with {}",
-        output.status
-    );
+    if !output.status.success() {
+        return Err(TestRunnerError::TraceDiff(output.status));
+    }
 
     println!(
         "\n{}{}",
