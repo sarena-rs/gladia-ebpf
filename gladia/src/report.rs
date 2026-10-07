@@ -19,7 +19,7 @@ pub fn print_test_result(test: &TestResult) {
         }
     }
     for entry in &test.logs {
-        println!("{}:{}:\n{}\n", test.file, entry.line, format_log(entry));
+        println!("$$ {}:{}: {}", test.file, entry.line, format_log(entry));
     }
     println!("\n");
 }

@@ -11,15 +11,15 @@ use crate::{
     ref_at::ref_at,
 };
 
-#[map(name = "endpoint_config")]
-static ENDPOINT_CONFIG: Array<EndpointConfig> = Array::pinned(1, 0);
-
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct EndpointConfig {
     pub mac: [u8; 6],
     pub ipv4: Ipv4Addr,
 }
+
+#[map(name = "endpoint_config")]
+static ENDPOINT_CONFIG: Array<EndpointConfig> = Array::pinned(1, 0);
 
 #[inline(always)]
 pub fn try_from_netdev(ctx: TcContext) -> Res<Verdict> {

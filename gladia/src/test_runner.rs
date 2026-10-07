@@ -93,12 +93,12 @@ pub fn run_ebpf_test_with_pin_dir(pin_dir: &str, programs: &[u8], test_programs:
     } else {
         Some(
             EbpfLoader::new()
-                .default_map_pin_directory(format!("{pin_dir}/prod"))
+                .default_map_pin_directory(pin_dir)
                 .load(programs)?,
         )
     };
     let mut test_bpf = EbpfLoader::new()
-        .default_map_pin_directory(format!("{pin_dir}/test"))
+        .default_map_pin_directory(pin_dir)
         .load(test_programs)?;
 
     let mut logs = EbpfLogs::default();
@@ -438,7 +438,6 @@ fn reset_pin_dir(dir: &str) -> Res<()> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
         Err(e) => return Err(e.into()),
     }
-    std::fs::create_dir_all(format!("{dir}/prod"))?;
-    std::fs::create_dir_all(format!("{dir}/test"))?;
+    std::fs::create_dir_all(dir)?;
     Ok(())
 }
