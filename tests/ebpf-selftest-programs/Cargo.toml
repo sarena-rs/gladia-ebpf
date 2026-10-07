@@ -1,0 +1,32 @@
+[package]
+name = "ebpf-selftest-programs"
+
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+gladia-ebpf = { path = "../../gladia-ebpf", default-features = false }
+
+aya-ebpf = { workspace = true, default-features = false }
+
+[build-dependencies]
+gladia = { path = "../../gladia" }
+which = { workspace = true }
+
+# eBPF programs cannot have tests: the eBPF target has no `test` crate, and
+# test builds force `panic = "unwind"`, which breaks `build-std`.
+[lib]
+test = false
+doctest = false
+bench = false
+
+[[bin]]
+name = "ebpf-selftest-programs"
+path = "src/main.rs"
+test = false
+bench = false

@@ -4,8 +4,8 @@
 // Must come before the modules so `tail_call!` is in scope inside them.
 gladia_ebpf::include_generated!();
 
-mod arp;
 mod panic;
 mod scapy_bytes;
+mod scapy_tests;
 
 pub use panic::do_panic;

@@ -1,10 +1,9 @@
 {
     "folders": [
-        { "name": "examples", "path": "examples" }
+        { "name": "examples", "path": "examples" },
+        { "name": "tests", "path": "tests" }
     ],
     "settings": {
-        // The examples workspace, checked for the eBPF target. The userspace
-        // crates are checked by opening the repository root instead.
         "rust-analyzer.cargo.target": "bpfel-unknown-none",
         "rust-analyzer.cargo.buildStd": ["core"],
         "rust-analyzer.check.overrideCommand": [
@@ -19,8 +18,6 @@
             "build-std=core",
             "--message-format=json"
         ],
-
-        // Same rustfmt.toml applies here; keep auto-imports in its shape.
         "rust-analyzer.imports.granularity.group": "crate",
         "rust-analyzer.imports.granularity.enforce": true,
         "rust-analyzer.imports.prefix": "crate",

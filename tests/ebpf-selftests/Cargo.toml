@@ -1,0 +1,19 @@
+[package]
+name = "ebpf-selftests"
+description = "Runs the eBPF self-tests of the framework in ebpf-selftest-programs"
+publish = false
+
+# A host crate: part of the root workspace, not of the self-test workspace (which builds everything
+# for the eBPF target).
+workspace = "../.."
+
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+aya = { workspace = true }
+gladia = { path = "../../gladia" }

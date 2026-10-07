@@ -69,6 +69,9 @@ pub const DEFAULT_PIN_DIR: &str = "/sys/fs/bpf/gladia";
 /// Both are the bytes of compiled ELF objects. How they are built is up to the caller (aya-build,
 /// a custom xtask, ...). Embed them with `aya::include_bytes_aligned!` so they can be parsed in
 /// place.
+///
+/// `programs` is only loaded when a test tail calls into it, so it may be empty for tests that
+/// make no tail calls.
 pub fn run_ebpf_test(programs: &[u8], test_programs: &[u8]) -> Res<()> {
     run_ebpf_test_with_pin_dir(DEFAULT_PIN_DIR, programs, test_programs)
 }
@@ -83,14 +86,23 @@ pub fn run_ebpf_test_with_pin_dir(pin_dir: &str, programs: &[u8], test_programs:
 
     let entry_calls = find_entry_calls(test_programs)?;
 
-    let mut prod_bpf = EbpfLoader::new()
-        .default_map_pin_directory(format!("{pin_dir}/prod"))
-        .load(programs)?;
+    // Without tail calls the test object has no tail call map, and nothing to load from `programs`.
+    let prod_bpf = if entry_calls.is_empty() {
+        None
+    } else {
+        Some(
+            EbpfLoader::new()
+                .default_map_pin_directory(format!("{pin_dir}/prod"))
+                .load(programs)?,
+        )
+    };
     let mut test_bpf = EbpfLoader::new()
         .default_map_pin_directory(format!("{pin_dir}/test"))
         .load(test_programs)?;
 
-    fill_entry_call_map(&mut prod_bpf, &mut test_bpf, &entry_calls)?;
+    if let Some(mut prod_bpf) = prod_bpf {
+        fill_entry_call_map(&mut prod_bpf, &mut test_bpf, &entry_calls)?;
+    }
 
     run_test(&mut test_bpf)
 }

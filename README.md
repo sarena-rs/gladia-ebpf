@@ -253,15 +253,22 @@ The Rust test fails if any eBPF test failed.
 `examples/` shows the framework as a user would use it:
 
 - `examples/ebpf-programs`: production programs;
-- `examples/ebpf-test-programs`: tests for them, including scapy-based packet tests;
+- `examples/ebpf-test-programs`: tests for them;
 - `examples/ebpf-tests`: the userspace test that runs them.
+
+`tests/` holds the eBPF self-tests of the framework itself (scapy packet compare, large packets,
+...), laid out the same way:
+
+- `tests/ebpf-selftest-programs`: the self-tests;
+- `tests/ebpf-selftests`: the userspace test that runs them.
 
 With [`just`](https://github.com/casey/just) and `jq` installed:
 
 ```sh
-just build-ebpf   # build the example eBPF objects with the xtask
-just test         # run the regular tests
-just ebpf-test    # build, then run the eBPF tests as root (asks for your sudo password)
+just build-ebpf     # build the example and self-test eBPF objects with the xtask
+just test           # run the regular tests
+just ebpf-test      # build, then run the example eBPF tests as root (asks for your sudo password)
+just ebpf-selftest  # build, then run the eBPF self-tests as root
 ```
 
 ## Limitations and future work

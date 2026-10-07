@@ -14,10 +14,18 @@ members = [
 
     # Host crate that runs the example eBPF tests
     "examples/ebpf-tests",
+
+    # Host crate that runs the eBPF self-tests of the framework
+    "tests/ebpf-selftests",
 ]
 
-# The example eBPF programs form their own workspace (see examples/Cargo.toml).
-exclude = ["examples/ebpf-programs", "examples/ebpf-test-programs"]
+# The example eBPF programs and the eBPF self-tests form their own workspaces
+# (see examples/Cargo.toml and tests/Cargo.toml).
+exclude = [
+    "examples/ebpf-programs",
+    "examples/ebpf-test-programs",
+    "tests/ebpf-selftest-programs",
+]
 
 default-members = [
     "gladia",
