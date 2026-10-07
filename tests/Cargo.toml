@@ -17,9 +17,9 @@ publish = false
 version = "0.1.0"
 
 [workspace.dependencies]
-# Must match the source of `aya-ebpf` used by `gladia-ebpf` in the root
+# Must match the version of `aya-ebpf` used by `gladia-ebpf` in the root
 # workspace, so both resolve to the same crate.
-aya-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-ebpf = { version = "0.2.1", default-features = false }
 which = { version = "8" }
 
 [workspace.lints.clippy]

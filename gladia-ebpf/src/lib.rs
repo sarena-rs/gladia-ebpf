@@ -49,11 +49,11 @@
 //!
 //! ```toml
 //! [dependencies]
-//! gladia-ebpf = "0.1"
+//! gladia-ebpf = "0.1.0-alpha.1"
 //! aya-ebpf = "..."
 //!
 //! [build-dependencies]
-//! gladia = "0.1"
+//! gladia = "0.1.0-alpha.1"
 //! ```
 //!
 //! Its build script calls `gladia::build_mapping()`, which finds every `tail_call!` in `src/`

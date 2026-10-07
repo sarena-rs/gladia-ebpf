@@ -21,11 +21,11 @@ as a build dependency:
 
 ```toml
 [dependencies]
-gladia-ebpf = "0.1"
+gladia-ebpf = "0.1.0-alpha.1"
 aya-ebpf = "..."
 
 [build-dependencies]
-gladia = "0.1"
+gladia = "0.1.0-alpha.1"
 ```
 
 The build script generates the code for tail calling into the production
@@ -90,7 +90,8 @@ runs `tc` programs only.
 The tests are loaded and run from userspace with the
 [gladia](https://crates.io/crates/gladia) crate.
 
-> **Status:** early development; the API will change.
+> **Status:** alpha; the API will change. This release is built on aya-ebpf
+> 0.2.1; your eBPF crates must use the same version.
 
 ## License
 

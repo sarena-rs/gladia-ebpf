@@ -10,6 +10,7 @@ where they actually run: as BPF bytecode, in the kernel, after passing the verif
 > **Status: work in progress.** The framework is usable, but young. The API, the generated code
 > and the wire format between the eBPF side and userspace will still change, and some parts are
 > tied to the layout of this repository. See [Limitations and future work](#limitations-and-future-work).
+> The first alpha, `0.1.0-alpha.1`, is built on the released aya 0.14 / aya-ebpf 0.2.1.
 
 ## Introduction
 
@@ -78,11 +79,11 @@ In the eBPF test crate, depend on `gladia-ebpf`, and on `gladia` as a build depe
 ```toml
 # my-test-programs/Cargo.toml
 [dependencies]
-gladia-ebpf = "0.1"
+gladia-ebpf = "0.1.0-alpha.1"
 aya-ebpf = "..."
 
 [build-dependencies]
-gladia = "0.1"
+gladia = "0.1.0-alpha.1"
 ```
 
 Its build script generates the code for calling the production programs:

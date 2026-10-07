@@ -42,24 +42,24 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
-rust-version = "1.98"
+rust-version = "1.89"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/sarena-rs/gladia-ebpf"
 keywords = ["ebpf", "xdp", "tcx", "testing", "aya"]
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [workspace.dependencies]
 # Internal crates. Released in lockstep, so pinned to the exact version: the
 # wire format between gladia and gladia-ebpf must match.
-gladia-macros = { path = "gladia-macros", version = "=0.1.0" }
-gladia-shared = { path = "gladia-shared", version = "=0.1.0", default-features = false }
+gladia-macros = { path = "gladia-macros", version = "=0.1.0-alpha.1" }
+gladia-shared = { path = "gladia-shared", version = "=0.1.0-alpha.1", default-features = false }
 
 anyhow = { version = "1" }
-aya = { git = "https://github.com/aya-rs/aya", default-features = false }
-aya-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
-aya-log = { git = "https://github.com/aya-rs/aya", default-features = false }
-aya-log-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya = { version = "0.14", default-features = false }
+aya-ebpf = { version = "0.2.1", default-features = false }
+aya-log = { version = "0.3", default-features = false }
+aya-log-ebpf = { version = "0.2", default-features = false }
 cargo_metadata = { version = "0.23", default-features = false }
 clap = { version = "4", features = ["std"] }
 hex = { version = "0.4", default-features = false }

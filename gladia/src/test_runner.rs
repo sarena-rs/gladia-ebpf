@@ -262,9 +262,9 @@ fn sub_test(
     let mut ctx = vec![0u8; CTX_SIZE];
 
     // Clear the results of the previous test.
-    maps.result.set(0, &[0u8; TEST_RESULT_MAP_SIZE], 0)?;
-    maps.scapy_assert_count.set(0, &0, 0)?;
-    maps.status_code.set(0, &0, 0)?;
+    maps.result.set(0, [0u8; TEST_RESULT_MAP_SIZE], 0)?;
+    maps.scapy_assert_count.set(0, 0, 0)?;
+    maps.status_code.set(0, 0, 0)?;
 
     if let Some(arrange_prog) = arrange_prog {
         let ret;
@@ -284,7 +284,7 @@ fn sub_test(
                 "error while running act prog: status code ({ret})"
             )));
         }
-        maps.status_code.set(0, &ret, 0)?;
+        maps.status_code.set(0, ret, 0)?;
     }
 
     run_bpf_program(assert_prog, &data, &ctx)?;

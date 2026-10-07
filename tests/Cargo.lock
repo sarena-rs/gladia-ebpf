@@ -29,7 +29,8 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 [[package]]
 name = "aya"
 version = "0.14.0"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66e644424fada9fff4fdc63848db1732fb69b626e8328202ef55c03df1f4d939"
 dependencies = [
  "assert_matches",
  "aya-obj",
@@ -37,7 +38,7 @@ dependencies = [
  "hashbrown",
  "libc",
  "log",
- "object",
+ "object 0.39.1",
  "once_cell",
  "scopeguard",
  "thiserror",
@@ -46,7 +47,8 @@ dependencies = [
 [[package]]
 name = "aya-build"
 version = "0.2.0"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609b414caa508f04d2dbbc9481ad6869f43ab9ab1dc9abd237fca27c0818f663"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -57,7 +59,8 @@ dependencies = [
 [[package]]
 name = "aya-ebpf"
 version = "0.2.1"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eace5970943931fea46a8cbdca208a8f6a9e0413d85a5a6c4e168f0b909570bc"
 dependencies = [
  "aya-build",
  "aya-ebpf-bindings",
@@ -69,7 +72,8 @@ dependencies = [
 [[package]]
 name = "aya-ebpf-bindings"
 version = "0.2.0"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf1f19286ebbda6673099b68d049034838f08e4939cef66c998a8d3e62825d76"
 dependencies = [
  "aya-build",
  "aya-ebpf-cty",
@@ -78,7 +82,8 @@ dependencies = [
 [[package]]
 name = "aya-ebpf-cty"
 version = "0.3.0"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0884264bc8a51a49fed03df8feada3a21d703cf501dae33c28bdba5d2313ef33"
 dependencies = [
  "aya-build",
 ]
@@ -86,21 +91,24 @@ dependencies = [
 [[package]]
 name = "aya-ebpf-macros"
 version = "0.2.0"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23e3a7f86e914df106dd00f9d757bc93f7d5c93380c51eead23d8d2ccd15a87a"
 dependencies = [
  "proc-macro2",
+ "proc-macro2-diagnostics",
  "quote",
- "syn 3.0.6",
+ "syn 2.0.119",
 ]
 
 [[package]]
 name = "aya-obj"
 version = "0.3.0"
-source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c76b9c75d9cdc155ff8f6a06d61e873f67bf47be8cfa92a3b5aaea43f4b4077"
 dependencies = [
  "bytes",
  "log",
- "object",
+ "object 0.39.1",
  "thiserror",
 ]
 
@@ -199,11 +207,11 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "gladia"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "aya",
  "gladia-shared",
- "object",
+ "object 0.40.0",
  "serde_json",
  "syn 3.0.6",
  "thiserror",
@@ -211,7 +219,7 @@ dependencies = [
 
 [[package]]
 name = "gladia-ebpf"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "aya-ebpf",
  "gladia-macros",
@@ -223,7 +231,7 @@ dependencies = [
 
 [[package]]
 name = "gladia-macros"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -232,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "gladia-shared"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "aya",
  "hex",
@@ -331,14 +339,23 @@ dependencies = [
 
 [[package]]
 name = "object"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e5a6c098c7a3b6547378093f5cc30bc54fd361ce711e05293a5cc589562739b"
+dependencies = [
+ "crc32fast",
+ "hashbrown",
+ "indexmap",
+ "memchr",
+]
+
+[[package]]
+name = "object"
 version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
 dependencies = [
- "crc32fast",
  "flate2",
- "hashbrown",
- "indexmap",
  "memchr",
  "ruzstd",
 ]
@@ -356,6 +373,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "proc-macro2-diagnostics"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af066a9c399a26e020ada66a034357a868728e72cd426f3adcd35f80d88d88c8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+ "version_check",
 ]
 
 [[package]]
@@ -509,6 +538,12 @@ name = "unicode-ident"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
+
+[[package]]
+name = "version_check"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "which"

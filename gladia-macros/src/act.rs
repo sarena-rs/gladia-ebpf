@@ -54,7 +54,6 @@ mod tests {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
             pub fn __test_fw_act_my_test(ctx: *mut ::gladia_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
-                let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
                 let tc_ctx = ::gladia_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
                 prog(tc_ctx) as i32
             }

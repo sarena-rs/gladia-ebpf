@@ -24,7 +24,7 @@ generates the code for tail calling into the production programs by name. See
 
 ```toml
 [build-dependencies]
-gladia = "0.1"
+gladia = "0.1.0-alpha.1"
 ```
 
 ```rust
@@ -41,7 +41,7 @@ Add it as a dev-dependency of the userspace crate:
 ```toml
 [dev-dependencies]
 aya = "..."
-gladia = "0.1"
+gladia = "0.1.0-alpha.1"
 ```
 
 The runner takes the two compiled eBPF objects as bytes: the production
@@ -77,7 +77,11 @@ Failed:
 
 The runner currently runs `tc` (`SchedClassifier`) programs only.
 
-> **Status:** early development; the API will change.
+> **Status:** alpha; the API will change. This release is built on aya 0.14.
+> When `assert_buffer!` finds a mismatch, the readable packet diff needs a
+> Python script from the repository that is not part of this crate; without it,
+> the test fails with an I/O error instead of the diff. A built-in packet
+> verifier will replace it.
 
 ## License
 

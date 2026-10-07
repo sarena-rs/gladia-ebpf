@@ -43,7 +43,6 @@ impl AssertProgram {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
             pub fn #outer_fn(ctx: *mut ::gladia_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
-                let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
                 let tc_ctx = ::gladia_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
                 let mut test_suite = match ::gladia_ebpf::suite::TestSuite::new(#name, ::core::file!()) {
                     None => return ::gladia_ebpf::wire::TestStatus::FrameworkError as i32,
@@ -92,7 +91,6 @@ mod tests {
             #[unsafe(no_mangle)]
             #[unsafe(link_section = "classifier")]
             pub fn __test_fw_assert_my_test(ctx: *mut ::gladia_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
-                let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
                 let tc_ctx = ::gladia_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
                 let mut test_suite = match ::gladia_ebpf::suite::TestSuite::new("my_test", ::core::file!()) {
                     None => return ::gladia_ebpf::wire::TestStatus::FrameworkError as i32,

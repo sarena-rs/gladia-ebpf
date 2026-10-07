@@ -200,5 +200,9 @@ impl<'a> PacketBuilder<'a> {
 }
 
 pub fn ctx_adjust_room(ctx: &TcContext, len_diff: i32) -> Result<(), c_long> {
-    ctx.change_tail((ctx.len() as i32 + len_diff) as u32, 0)
+    // `TcContext::change_tail` is not in a released aya-ebpf yet.
+    let ret = unsafe {
+        aya_ebpf::helpers::bpf_skb_change_tail(ctx.skb.skb, (ctx.len() as i32 + len_diff) as u32, 0)
+    };
+    if ret == 0 { Ok(()) } else { Err(ret) }
 }

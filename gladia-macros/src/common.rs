@@ -53,7 +53,6 @@ pub(crate) fn passthrough_tc(kind: &str, name: &str, item: &ItemFn) -> TokenStre
         #[unsafe(no_mangle)]
         #[unsafe(link_section = "classifier")]
         pub fn #outer_fn(ctx: *mut ::gladia_ebpf::__private::aya_ebpf::bindings::__sk_buff) -> i32 {
-            let ctx = unsafe { ::core::ptr::NonNull::new_unchecked(ctx) };
             let tc_ctx = ::gladia_ebpf::__private::aya_ebpf::programs::TcContext::new(ctx);
             #inner_fn(tc_ctx) as i32
         }

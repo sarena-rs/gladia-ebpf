@@ -83,7 +83,6 @@ the wrapper is a `#[no_mangle]` function in the `classifier` section that conver
 #[unsafe(no_mangle)]
 #[unsafe(link_section = "classifier")]
 pub fn __test_fw_arrange_arp_request_is_answered(ctx: *mut __sk_buff) -> i32 {
-    let ctx = unsafe { NonNull::new_unchecked(ctx) };
     arp_request_arrange(TcContext::new(ctx)) as i32
 }
 ```
