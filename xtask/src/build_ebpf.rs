@@ -177,10 +177,8 @@ fn build_package(
                 }
             }
 
-            Some("build-finished") => {
-                if v["success"].as_bool() == Some(false) {
-                    bail!("cargo reported build-finished with success=false");
-                }
+            Some("build-finished") if v["success"].as_bool() == Some(false) => {
+                bail!("cargo reported build-finished with success=false");
             }
 
             _ => {}

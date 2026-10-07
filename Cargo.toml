@@ -47,45 +47,24 @@ gladia-macros = { path = "gladia-macros", version = "=0.1.0" }
 gladia-shared = { path = "gladia-shared", version = "=0.1.0", default-features = false }
 
 anyhow = { version = "1" }
-async-trait = "0.1.89"
-aya = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
-aya-build = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
-aya-ebpf = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
-aya-log = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
-aya-log-ebpf = { git = "https://github.com/erwin-kok/aya", branch = "development", default-features = false }
-bitflags = "2"
-bytes = "1.11"
+aya = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-log = { git = "https://github.com/aya-rs/aya", default-features = false }
+aya-log-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
 cargo_metadata = { version = "0.23", default-features = false }
 clap = { version = "4", features = ["std"] }
-clap_complete = "4"
-config = "0.15"
-env_logger = { version = "0.11", default-features = false }
-futures = { version = "0.3", default-features = false }
 hex = { version = "0.4", default-features = false }
-ipnet = { version ="2", default-features = false }
-jsonpath_lib = "0.3"
 log = { version = "0.4", default-features = false }
 network-types = { version = "0.2", default-features = false }
-nix = { version = "0.31", features = ["poll"] }
 num-derive = { version = "0.5", default-features = false }
 num-traits = { version = "0.2", default-features = false }
-object = "0.37"
+object = "0.40"
 proc-macro2 = { version = "1", default-features = false }
 quote = { version = "1", default-features = false }
-rand = { version = "0.10", default-features = false }
-regex = { version = "1.12" }
-schemars = "1"
 serde = { version = "1", default-features = false, features = ["derive"] }
 serde_json = "1"
-serde_yaml = "0.9"
-sha2 = "0.11"
 syn = { version = "3", features = ["full", "visit"] }
 thiserror = { version = "2", default-features = false }
-tokio = { version = "1.40" }
-tokio-util = { version = "0.7", features = ["rt"] }
-uuid = { version = "1", features = ["v4"] }
-which = { version = "8" }
-wiremock = "0.6"
 
 [workspace.lints.clippy]
 all = "warn"

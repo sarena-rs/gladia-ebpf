@@ -79,7 +79,7 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 [[package]]
 name = "aya"
 version = "0.14.0"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "assert_matches",
  "aya-obj",
@@ -87,7 +87,7 @@ dependencies = [
  "hashbrown",
  "libc",
  "log",
- "object 0.40.0",
+ "object",
  "once_cell",
  "scopeguard",
  "thiserror",
@@ -96,7 +96,7 @@ dependencies = [
 [[package]]
 name = "aya-build"
 version = "0.2.0"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -107,7 +107,7 @@ dependencies = [
 [[package]]
 name = "aya-ebpf"
 version = "0.2.1"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "aya-build",
  "aya-ebpf-bindings",
@@ -119,7 +119,7 @@ dependencies = [
 [[package]]
 name = "aya-ebpf-bindings"
 version = "0.2.0"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "aya-build",
  "aya-ebpf-cty",
@@ -128,7 +128,7 @@ dependencies = [
 [[package]]
 name = "aya-ebpf-cty"
 version = "0.3.0"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "aya-build",
 ]
@@ -136,7 +136,7 @@ dependencies = [
 [[package]]
 name = "aya-ebpf-macros"
 version = "0.2.0"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -146,11 +146,11 @@ dependencies = [
 [[package]]
 name = "aya-obj"
 version = "0.3.0"
-source = "git+https://github.com/erwin-kok/aya?branch=development#d1c0f746e2230e9348737de731779462ea94105d"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
 dependencies = [
  "bytes",
  "log",
- "object 0.40.0",
+ "object",
  "thiserror",
 ]
 
@@ -297,7 +297,7 @@ version = "0.1.0"
 dependencies = [
  "aya",
  "gladia-shared",
- "object 0.37.3",
+ "object",
  "serde_json",
  "syn 3.0.6",
  "thiserror",
@@ -437,25 +437,16 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.37.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff76201f031d8863c38aa7f905eca4f53abbfa15f609db4277d44cd8938f33fe"
-dependencies = [
- "flate2",
- "memchr",
- "ruzstd",
-]
-
-[[package]]
-name = "object"
 version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
 dependencies = [
  "crc32fast",
+ "flate2",
  "hashbrown",
  "indexmap",
  "memchr",
+ "ruzstd",
 ]
 
 [[package]]
@@ -505,9 +496,9 @@ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
 name = "ruzstd"
-version = "0.8.3"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7c1c839d570d835527c9a5e4db7cb2198683a988cb9d7293fc8674e6bd58fc8"
+checksum = "a252f5e20f038fe7b4ea53e073e65398d652c864cc162fc77c56c2f13717b888"
 dependencies = [
  "twox-hash",
 ]

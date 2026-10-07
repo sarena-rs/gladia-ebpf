@@ -43,8 +43,8 @@ the internals in the [design document](docs/design.md).
 
 | Crate | Used in | Purpose |
 |---|---|---|
-| [`gladia-ebpf`](gladia-ebpf) | your eBPF test programs (`no_std`) | the `#[arrange]`, `#[act]` and `#[assert]` macros, assertions, logging and packet helpers |
-| [`gladia`](gladia) | your userspace test, and the `build.rs` of your eBPF test programs | the test runner, and the code generation for tail calls |
+| [`gladia-ebpf`](gladia-ebpf) | eBPF test programs (`no_std`) | the `#[arrange]`, `#[act]` and `#[assert]` macros, assertions, logging and packet helpers |
+| [`gladia`](gladia) | userspace test, and the `build.rs` of your eBPF test programs | the test runner, and the code generation for tail calls |
 | [`gladia-macros`](gladia-macros) | internal | the procedural macros, re-exported by `gladia-ebpf` |
 | [`gladia-shared`](gladia-shared) | internal | types and wire format shared by both sides |
 
