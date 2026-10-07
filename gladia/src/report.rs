@@ -3,6 +3,8 @@ use gladia_shared::{
     tlv_reader::{LogEntry, TestResult},
 };
 
+use crate::logging;
+
 pub fn print_test_result(test: &TestResult) {
     match test.status {
         TestStatus::Pass => {
@@ -19,7 +21,12 @@ pub fn print_test_result(test: &TestResult) {
         }
     }
     for entry in &test.logs {
-        println!("$$ {}:{}: {}", test.file, entry.line, format_log(entry));
+        logging::emit(
+            log::Level::Info,
+            &test.file,
+            Some(entry.line),
+            format_args!("{}", format_log(entry)),
+        );
     }
     println!("\n");
 }

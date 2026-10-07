@@ -6,6 +6,5 @@ gladia_ebpf::include_generated!();
 
 mod arp;
 mod panic;
-mod scapy_bytes;
 
 pub use panic::do_panic;

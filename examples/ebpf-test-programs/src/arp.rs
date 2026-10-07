@@ -118,7 +118,6 @@ fn build_packet(ctx: TcContext) -> TestStatus {
 
     let mut builder = gladia_ebpf::util::PacketBuilder::new(&ctx);
     builder.push_data(&packet);
-    // builder.push_data(&crate::scapy_bytes::SCAPY_L2_ANNOUNCE_ARP_REQ_BYTES);
     builder.build();
     TestStatus::Pass
 }

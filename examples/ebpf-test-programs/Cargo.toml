@@ -13,7 +13,7 @@ workspace = true
 gladia-ebpf = { path = "../../gladia-ebpf", default-features = false }
 
 aya-ebpf = { workspace = true, default-features = false }
-etherparse = { version = "0.21", default-features = false }
+etherparse = { workspace = true, default-features = false }
 network-types = { workspace = true, default-features = false }
 serde = { workspace = true, default-features = false }
 

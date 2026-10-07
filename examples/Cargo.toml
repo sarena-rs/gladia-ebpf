@@ -21,6 +21,7 @@ version = "0.1.0"
 aya-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
 aya-log-ebpf = { git = "https://github.com/aya-rs/aya", default-features = false }
 bitflags = { version = "2", default-features = false }
+etherparse = { version = "0.21", default-features = false }
 network-types = { version = "0.2", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 serde = { version = "1", default-features = false, features = ["derive"] }

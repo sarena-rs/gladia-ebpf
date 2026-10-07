@@ -25,6 +25,21 @@ impl EbpfLogs {
     }
 }
 
+pub(crate) fn emit(
+    level: log::Level,
+    file: &str,
+    line: Option<u32>,
+    args: std::fmt::Arguments<'_>,
+) {
+    let record = log::Record::builder()
+        .level(level)
+        .file(Some(file))
+        .line(line)
+        .args(args)
+        .build();
+    log::Log::log(&LogPrinter, &record);
+}
+
 struct LogPrinter;
 
 impl log::Log for LogPrinter {
@@ -36,9 +51,9 @@ impl log::Log for LogPrinter {
         let level = match record.level() {
             log::Level::Error => "\x1b[31mERROR\x1b[0m",
             log::Level::Warn => "\x1b[33mWARN\x1b[0m",
-            log::Level::Info => "\x1b[32mINFO\x1b[0m",
-            log::Level::Debug => "\x1b[34mDEBUG\x1b[0m",
-            log::Level::Trace => "\x1b[35mTRACE\x1b[0m",
+            log::Level::Info => "\x1b[37mINFO\x1b[0m",
+            log::Level::Debug => "\x1b[37mDEBUG\x1b[0m",
+            log::Level::Trace => "\x1b[37mTRACE\x1b[0m",
         };
         let file = record.file().unwrap_or("?");
         let line = record.line().unwrap_or(0);
