@@ -7,6 +7,25 @@ use crate::{
     constants::{TAIL_CALL_MACRO_NAME, TAIL_CALL_MAP_NAME},
 };
 
+/// Generates the tail call code for an eBPF test crate. Call it from the crate's build script.
+///
+/// It scans the crate's `src/` directory for `tail_call!(ctx, "name")` invocations and writes,
+/// to `OUT_DIR`, the tail call map, a table of the called production programs (read by the
+/// runner), and the `tail_call!` macro that jumps to them by name. The crate includes the
+/// result with `gladia_ebpf::include_generated!()`.
+///
+/// ```no_run
+/// // build.rs
+/// fn main() {
+///     gladia::build_mapping();
+/// }
+/// ```
+///
+/// # Panics
+///
+/// Panics when it is not run from a build script, or when the source tree cannot be read.
+// The example shows `main` because it is the build script's.
+#[allow(clippy::needless_doctest_main)]
 pub fn build_mapping() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let src = manifest.join("src");

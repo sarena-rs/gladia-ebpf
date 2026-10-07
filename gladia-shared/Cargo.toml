@@ -8,6 +8,7 @@ edition.workspace = true
 license.workspace = true
 readme = "README.md"
 repository.workspace = true
+rust-version.workspace = true
 version.workspace = true
 
 [lints]
@@ -22,3 +23,6 @@ user = ["dep:aya", "dep:serde"]
 aya = { workspace = true, optional = true }
 hex = { workspace = true }
 serde = { workspace = true, optional = true }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,41 +1,67 @@
+//! The userspace side of the wire format: decodes a test result.
+
 use std::fmt::{Display, Formatter};
 
 use crate::{Tag, TestStatus, WIRE_VERSION};
 
+/// A log message of a test, not yet formatted.
 #[derive(Debug, Default)]
 pub struct LogEntry {
+    /// The format string.
     pub fmt: String,
+    /// The source line.
     pub line: u32,
+    /// The arguments.
     pub args: Vec<u64>,
 }
 
+/// A decoded test result.
 #[derive(Debug)]
 pub struct TestResult {
+    /// The name of the test.
     pub name: String,
+    /// The source file of the test.
     pub file: String,
+    /// The final status.
     pub status: TestStatus,
+    /// The log messages, in order.
     pub logs: Vec<LogEntry>,
 }
 
+/// Why a test result could not be decoded.
 #[derive(Debug)]
 pub enum ParseError {
+    /// The first record is not a [`Tag::Version`] record.
     MissingVersionTag,
+    /// The result has another wire format version.
     IncompatibleVersion {
+        /// The version found.
         found: u8,
     },
+    /// A record header is cut off.
     TruncatedHeader {
+        /// The offset of the record.
         offset: usize,
     },
+    /// A record value is cut off.
     TruncatedValue {
+        /// The offset of the record.
         offset: usize,
+        /// The length of the value.
         expected: usize,
     },
+    /// A record has the wrong length for its tag.
     BadTagLength {
+        /// The tag.
         tag: u8,
+        /// The length the tag requires.
         expected: usize,
+        /// The length found.
         found: usize,
     },
+    /// A [`Tag::LogLine`] or [`Tag::LogArg`] record without a preceding [`Tag::LogFmt`].
     OrphanLogField {
+        /// The offset of the record.
         offset: usize,
     },
 }
@@ -72,7 +98,7 @@ impl Display for ParseError {
 
 impl std::error::Error for ParseError {}
 
-/// Parses the single flat test result written by a `TestSuite`/`TEST!` block.
+/// Decodes the test result written by a `TestSuite`.
 pub fn parse_test(data: &[u8]) -> Result<TestResult, ParseError> {
     let mut cur = 0usize;
     let mut name = String::new();

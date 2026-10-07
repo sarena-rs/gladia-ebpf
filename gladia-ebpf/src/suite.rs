@@ -1,3 +1,8 @@
+//! The state of a running test, and the maps it reports through.
+//!
+//! The maps are read by the `gladia` runner. They are public so that tests of the framework
+//! itself can inspect them; normal tests do not need them.
+
 use aya_ebpf::{
     macros::map,
     maps::{Array, PerCpuArray},
@@ -10,28 +15,38 @@ use gladia_shared::{
 
 use crate::test_log;
 
+/// The encoded result of the current test: its name, logs and status.
 #[map(name = "test_suite_result")]
 pub static TEST_SUITE_RESULT: Array<[u8; TEST_RESULT_MAP_SIZE]> = Array::pinned(1, 0);
 
+/// The status code of the current test.
 #[map(name = "test_suite_status_code")]
 pub static TEST_SUITE_STATUS_CODE: Array<u32> = Array::with_max_entries(1, 0);
 
+/// The failed [`assert_buffer!`](crate::assert_buffer) checks of the current test.
 #[map(name = "scapy_assert_map")]
 pub static SCAPY_ASSERT_MAP: Array<ScapyAssert> =
     Array::with_max_entries(SCAPY_MAX_ASSERTS as u32, 0);
 
+/// The number of entries in [`SCAPY_ASSERT_MAP`].
 #[map(name = "scapy_assert_map_count")]
 pub static SCAPY_ASSERT_MAP_COUNT: Array<u32> = Array::with_max_entries(1, 0);
 
 #[map(name = "__scapy_assert_map_scratch")]
 static SCAPY_ASSERT_MAP_SCRATCH: PerCpuArray<ScapyAssert> = PerCpuArray::with_max_entries(1, 0);
 
+/// The state of a running test, passed to every [`macro@crate::assert`] function.
+///
+/// Use it through the assertion and logging macros, such as [`assert_test!`](crate::assert_test)
+/// and [`test_log!`](crate::test_log).
 pub struct TestSuite<'a> {
+    #[doc(hidden)]
     pub writer: TlvWriter<'a>,
     status: TestStatus,
 }
 
 impl<'a> TestSuite<'a> {
+    #[doc(hidden)]
     pub fn new(name: &str, file: &str) -> Option<Self> {
         let ptr = TEST_SUITE_RESULT.get_ptr_mut(0)?;
         let buf = unsafe { &mut *ptr };
@@ -44,16 +59,19 @@ impl<'a> TestSuite<'a> {
         })
     }
 
+    /// The current status of the test.
     #[inline]
     pub fn status(&self) -> TestStatus {
         self.status
     }
 
+    /// Sets the status of the test, without ending it.
     #[inline]
     pub fn set_status(&mut self, status: TestStatus) {
         self.status = status;
     }
 
+    #[doc(hidden)]
     #[inline]
     pub fn log0(&mut self, line: u32, fmt: &[u8]) {
         if self.write_log_inner(line, fmt, &[]).is_none() {
@@ -61,6 +79,7 @@ impl<'a> TestSuite<'a> {
         }
     }
 
+    #[doc(hidden)]
     #[inline]
     pub fn log1(&mut self, line: u32, fmt: &[u8], a0: u64) {
         if self.write_log_inner(line, fmt, &[a0]).is_none() {
@@ -68,6 +87,7 @@ impl<'a> TestSuite<'a> {
         }
     }
 
+    #[doc(hidden)]
     #[inline]
     pub fn log2(&mut self, line: u32, fmt: &[u8], a0: u64, a1: u64) {
         if self.write_log_inner(line, fmt, &[a0, a1]).is_none() {
@@ -75,6 +95,7 @@ impl<'a> TestSuite<'a> {
         }
     }
 
+    #[doc(hidden)]
     #[inline]
     pub fn log3(&mut self, line: u32, fmt: &[u8], a0: u64, a1: u64, a2: u64) {
         if self.write_log_inner(line, fmt, &[a0, a1, a2]).is_none() {
@@ -82,6 +103,7 @@ impl<'a> TestSuite<'a> {
         }
     }
 
+    #[doc(hidden)]
     #[inline]
     pub fn log(&mut self, line: u32, fmt: &[u8], args: &[u64]) {
         if self.write_log_inner(line, fmt, args).is_none() {
@@ -89,6 +111,7 @@ impl<'a> TestSuite<'a> {
         }
     }
 
+    #[doc(hidden)]
     #[inline(always)]
     pub fn assert_buffer_inner(
         &mut self,
@@ -134,11 +157,13 @@ impl<'a> TestSuite<'a> {
         }
     }
 
+    /// Marks the test as failed, without ending it.
     #[inline]
     pub fn fail(&mut self) {
         self.status = TestStatus::Fail;
     }
 
+    /// Marks the test as skipped, without ending it.
     #[inline]
     pub fn skip(&mut self) {
         self.status = TestStatus::Skip;
@@ -209,6 +234,7 @@ impl<'a> TestSuite<'a> {
     }
 }
 
+/// Copies `len` bytes from `src` to `dst`, one byte at a time.
 #[inline]
 pub fn memcpy(dst: *mut u8, src: *const u8, len: usize) {
     for i in 0..len {
@@ -216,6 +242,7 @@ pub fn memcpy(dst: *mut u8, src: *const u8, len: usize) {
     }
 }
 
+/// Returns whether the `len` bytes at `buf1` and `buf2` are equal.
 #[inline]
 pub fn memcmp(buf1: *const u8, buf2: *const u8, len: usize) -> bool {
     for i in 0..len {
