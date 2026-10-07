@@ -50,6 +50,7 @@ use gladia_shared::tlv_reader::ParseError;
 mod builder;
 mod collect;
 mod constants;
+mod logging;
 mod reader;
 mod report;
 mod test_runner;
@@ -71,6 +72,10 @@ pub enum TestRunnerError {
     /// A program is not in its object.
     #[error("Program {0} not found")]
     ProgramNotFound(String),
+
+    /// Reading the `aya-log` records of an eBPF object failed.
+    #[error("aya-log error: {0}")]
+    LogError(#[from] aya_log::Error),
 
     /// Accessing a map failed.
     #[error("eBPF map error: {0}")]

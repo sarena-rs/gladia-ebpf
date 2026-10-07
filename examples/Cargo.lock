@@ -94,6 +94,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aya-log"
+version = "0.3.0"
+source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
+dependencies = [
+ "aya",
+ "aya-log-common",
+ "log",
+ "thiserror",
+]
+
+[[package]]
 name = "aya-log-common"
 version = "0.2.0"
 source = "git+https://github.com/aya-rs/aya#de7289a5b8519a908b9395698d3ba6b3379b50a0"
@@ -255,7 +266,9 @@ name = "gladia"
 version = "0.1.0"
 dependencies = [
  "aya",
+ "aya-log",
  "gladia-shared",
+ "log",
  "object",
  "serde_json",
  "syn 3.0.6",

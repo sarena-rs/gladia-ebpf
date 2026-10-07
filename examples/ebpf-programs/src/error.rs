@@ -24,6 +24,9 @@ pub enum EbpfError {
     #[error("Internal Error")]
     InternalError,
 
+    #[error("packet too short")]
+    PacketSizeError,
+
     #[error("Protocol not supported: {0}")]
     UnsupportedProtocol(u8),
 
@@ -34,7 +37,9 @@ pub enum EbpfError {
 impl EbpfError {
     pub const fn verdict(&self) -> Verdict {
         match self {
-            EbpfError::InternalError | EbpfError::MapError(_) => Verdict::Drop,
+            EbpfError::InternalError | EbpfError::PacketSizeError | EbpfError::MapError(_) => {
+                Verdict::Drop
+            }
 
             EbpfError::UnsupportedProtocol(_) => Verdict::Pass,
         }

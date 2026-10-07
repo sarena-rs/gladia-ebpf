@@ -13,7 +13,8 @@ use aya::{
 use gladia_shared::{ScapyAssert, TEST_RESULT_MAP_SIZE, TestStatus, tlv_reader};
 
 use crate::{
-    Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, reader::find_entry_calls, report,
+    Res, TestRunnerError, constants::TAIL_CALL_MAP_NAME, logging::EbpfLogs,
+    reader::find_entry_calls, report,
 };
 
 const PAGE_SIZE: usize = 4096;
@@ -100,11 +101,15 @@ pub fn run_ebpf_test_with_pin_dir(pin_dir: &str, programs: &[u8], test_programs:
         .default_map_pin_directory(format!("{pin_dir}/test"))
         .load(test_programs)?;
 
+    let mut logs = EbpfLogs::default();
+
     if let Some(mut prod_bpf) = prod_bpf {
         fill_entry_call_map(&mut prod_bpf, &mut test_bpf, &entry_calls)?;
+        logs.attach(&mut prod_bpf)?;
     }
+    logs.attach(&mut test_bpf)?;
 
-    run_test(&mut test_bpf)
+    run_test(&mut test_bpf, &mut logs)
 }
 
 /// Loads every production program the test programs tail call into, and puts it in its slot of
@@ -127,7 +132,7 @@ fn fill_entry_call_map(
     Ok(())
 }
 
-fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
+fn run_test(test_bpf: &mut Ebpf, logs: &mut EbpfLogs) -> Res<()> {
     // Group the test programs by test name.
     let mut groups: BTreeMap<String, ProgramSet> = BTreeMap::new();
     for (prog_name, _) in test_bpf.programs() {
@@ -179,7 +184,16 @@ fn run_test(test_bpf: &mut Ebpf) -> Res<()> {
         // Checked above: every test has an assert program.
         let assert_prog = get(&program_set.assert)?.unwrap();
 
-        let outcome = sub_test(test_name, &mut maps, arrange_prog, act_prog, assert_prog);
+        let outcome = sub_test(
+            test_name,
+            &mut maps,
+            logs,
+            arrange_prog,
+            act_prog,
+            assert_prog,
+        );
+        // A test that stopped early has not printed its log records yet.
+        logs.flush();
         if let Err(e) = &outcome {
             println!("\x1b[31m[ERROR]\x1b[0m {test_name}: {e}\n");
         }
@@ -254,6 +268,7 @@ impl Summary {
 fn sub_test(
     name: &str,
     maps: &mut TestMaps,
+    logs: &mut EbpfLogs,
     arrange_prog: Option<&SchedClassifier>,
     act_prog: Option<&SchedClassifier>,
     assert_prog: &SchedClassifier,
@@ -302,6 +317,7 @@ fn sub_test(
     let result = tlv_reader::parse_test(&raw[..written])?;
 
     report::print_test_result(&result);
+    logs.flush();
 
     process_asserts(name, &maps.scapy_assert, &maps.scapy_assert_count)?;
 
