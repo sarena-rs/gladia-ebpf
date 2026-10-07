@@ -34,12 +34,7 @@ build-ebpf:
     cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-programs -o target/ebpf-objects/ebpf-programs.o
     cargo run --release --package xtask -- build-ebpf --manifest-path examples/Cargo.toml -p ebpf-test-programs -o target/ebpf-objects/ebpf-test-programs.o
 
-ebpf-test: build-ebpf 
-    #!/usr/bin/env bash
-    set -euo pipefail
-    exe=$(cargo test --no-run -p ebpf-tests --test ebpf_test --message-format=json \
-        | jq -r 'select(.profile.test == true) | .executable')
-    sudo "$exe" --ignored --no-capture
+ebpf-test: (_root-test "ebpf-tests")
 
 # Full workflow: build, test, and run all root-only test suites incl. the eBPF tests
 all: build test ebpf-test
@@ -51,6 +46,5 @@ _root-test package: build-ebpf
     exes=$(cargo test -p {{package}} --tests --no-run --message-format=json \
         | jq -r 'select(.profile.test == true) | .executable | select(. != null)')
     for exe in $exes; do
-        just netns-clean
         sudo "$exe" --ignored --no-capture
     done

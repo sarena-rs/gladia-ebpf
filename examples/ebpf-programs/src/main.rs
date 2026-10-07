@@ -18,26 +18,6 @@ static GLOBAL: Array<u32> = Array::pinned(64, 0);
 static PER_ENDPOINT_CALLS_MAP: Array<u32> = Array::with_max_entries(64, 0);
 
 #[classifier]
-pub fn from_container(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_from_container(ctx))
-}
-
-#[classifier]
-pub fn to_container(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_to_container(ctx))
-}
-
-#[classifier]
-pub fn from_host(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_from_host(ctx))
-}
-
-#[classifier]
-pub fn to_host(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_to_host(ctx))
-}
-
-#[classifier]
 pub fn from_netdev(ctx: TcContext) -> i32 {
     dispatch(ebpf_programs::try_from_netdev(ctx))
 }
@@ -45,26 +25,6 @@ pub fn from_netdev(ctx: TcContext) -> i32 {
 #[classifier]
 pub fn to_netdev(ctx: TcContext) -> i32 {
     dispatch(ebpf_programs::try_to_netdev(ctx))
-}
-
-#[classifier]
-pub fn from_overlay(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_from_overlay(ctx))
-}
-
-#[classifier]
-pub fn to_overlay(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_to_overlay(ctx))
-}
-
-#[classifier]
-pub fn from_wireguard(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_from_wireguard(ctx))
-}
-
-#[classifier]
-pub fn to_wireguard(ctx: TcContext) -> i32 {
-    dispatch(ebpf_programs::try_to_wireguard(ctx))
 }
 
 #[cfg(not(test))]
