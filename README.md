@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/sarena-rs/gladia-ebpf/actions/workflows/ci.yaml/badge.svg)](https://github.com/sarena-rs/gladia-ebpf/actions/workflows/ci.yaml)
 [![made-with-rust](https://img.shields.io/badge/Made%20with-Rust-1f425f.svg)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/github/license/sarena-rs/gladia-ebpf.svg)](https://github.com/sarena-rs/gladia-ebpf/blob/master/LICENSE-APACHE)
+[![License](https://img.shields.io/github/license/sarena-rs/gladia-ebpf.svg)](https://github.com/sarena-rs/gladia-ebpf/blob/main/LICENSE-APACHE)
 
 Gladia is a framework for testing eBPF programs 🐝 written in Rust 🦀 with [Aya](https://aya-rs.dev),
 where they actually run: as BPF bytecode, in the kernel, after passing the verifier.
